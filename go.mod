@@ -11,7 +11,7 @@ require (
 	github.com/multiformats/go-multiaddr v0.16.1
 	github.com/powerloom/go-rpc-helper v1.0.5
 	github.com/powerloom/snapshot-sequencer-validator v0.0.0-20251118183737-ffc7df9227f8
-	github.com/redis/go-redis/v9 v9.7.0
+	github.com/redis/go-redis/v9 v9.7.3
 )
 
 require (
