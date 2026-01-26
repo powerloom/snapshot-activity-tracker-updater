@@ -1,0 +1,23 @@
+.env
+*.xml
+
+# Binary files (never commit)
+p2p-debugger
+main
+
+# Build artifacts
+*.test
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Binary output directory if using one
+bin/
+
+# Auto-generated docker-compose override (created by start.sh for production mode)
+docker-compose.override.yml
+
+# Cloned dependencies (development mode)
+relayer-py/
+relayer-logs/
