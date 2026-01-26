@@ -4,7 +4,7 @@ go 1.25
 
 require (
 	github.com/cenkalti/backoff/v4 v4.3.0
-	github.com/ethereum/go-ethereum v1.16.7
+	github.com/ethereum/go-ethereum v1.16.8
 	github.com/libp2p/go-libp2p v0.43.0
 	github.com/libp2p/go-libp2p-kad-dht v0.34.0
 	github.com/libp2p/go-libp2p-pubsub v0.14.2
