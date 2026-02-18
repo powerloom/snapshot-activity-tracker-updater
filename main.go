@@ -386,6 +386,21 @@ func main() {
 		discoverPeers(ctx, h, routingDiscovery, presenceTopicName)
 	}
 
+	// When in validator mesh mode, also participate in the snapshot submission mesh
+	// to strengthen it - passive participation keeps the mesh healthy
+	var submissionDiscoveryTopic string
+	var submissionMainTopic string
+	if validatorMeshMode {
+		submissionPrefix := os.Getenv("GOSSIPSUB_SNAPSHOT_SUBMISSION_PREFIX")
+		if submissionPrefix != "" {
+			submissionDiscoveryTopic = submissionPrefix + "/0"
+			submissionMainTopic = submissionPrefix + "/all"
+			log.Printf("Validator mode: also discovering on snapshot submission mesh to strengthen it")
+			discoverPeers(ctx, h, routingDiscovery, submissionDiscoveryTopic)
+			discoverPeers(ctx, h, routingDiscovery, submissionMainTopic)
+		}
+	}
+
 	// Initialize components for validator mesh mode
 	var batchProcessor *BatchProcessor
 	var submissionCounter *SubmissionCounter
@@ -856,6 +871,21 @@ func main() {
 			}
 		}
 
+		// Passively join snapshot submission mesh topics when in validator mode
+		// This strengthens the submission mesh by adding another peer without processing messages
+		if validatorMeshMode && submissionMainTopic != "" {
+			if _, err = ps.Join(submissionMainTopic); err != nil {
+				log.Printf("Warning: failed to join submission main topic: %v", err)
+			} else {
+				log.Printf("Passively joined submission mesh main topic: %s", submissionMainTopic)
+			}
+			if _, err = ps.Join(submissionDiscoveryTopic); err != nil {
+				log.Printf("Warning: failed to join submission discovery topic: %v", err)
+			} else {
+				log.Printf("Passively joined submission mesh discovery topic: %s", submissionDiscoveryTopic)
+			}
+		}
+
 		// Subscribe to discovery topic
 		if discoveryTopic != nil {
 			go func() {
@@ -896,6 +926,14 @@ func main() {
 					if (mode == "LISTENER" || mode == "PUBLISHER") && topicName != discoveryTopicName {
 						discoveryPeers := ps.ListPeers(discoveryTopicName)
 						log.Printf("Peers in discovery topic (joining room): %v (count: %d)", discoveryPeers, len(discoveryPeers))
+					}
+
+					// In validator mode, also show submission mesh peers
+					if validatorMeshMode && submissionMainTopic != "" {
+						submissionPeers := ps.ListPeers(submissionMainTopic)
+						log.Printf("Peers in submission mesh %s: %v (count: %d)", submissionMainTopic, submissionPeers, len(submissionPeers))
+						submissionDiscoveryPeers := ps.ListPeers(submissionDiscoveryTopic)
+						log.Printf("Peers in submission discovery %s: %v (count: %d)", submissionDiscoveryTopic, submissionDiscoveryPeers, len(submissionDiscoveryPeers))
 					}
 
 					// Also show total connected peers
