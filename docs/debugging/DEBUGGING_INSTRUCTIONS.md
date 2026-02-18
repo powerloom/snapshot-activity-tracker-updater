@@ -10,7 +10,7 @@ This guide provides specific commands and log patterns to diagnose why `UpdateFi
 
 ```bash
 # Monitor all day fetching activity
-sudo docker logs libp2p-gossipsub-topic-debugger-p2p-debugger-1 -f | grep -E "FetchCurrentDay|Day changed|Day unchanged|First day fetch"
+sudo docker logs snapshot-activity-tracker-updater-snapshot-activity-tracker-1 -f | grep -E "FetchCurrentDay|Day changed|Day unchanged|First day fetch"
 
 # Expected output when working correctly:
 # ✅ FetchCurrentDay: Successfully fetched day 65 from DataMarket contract...
@@ -34,7 +34,7 @@ sudo docker logs libp2p-gossipsub-topic-debugger-p2p-debugger-1 -f | grep -E "Fe
 
 ```bash
 # Monitor day transition detection
-sudo docker logs libp2p-gossipsub-topic-debugger-p2p-debugger-1 -f | grep -E "CheckDayTransition|Day transition detected|No day transition|Stored day transition marker"
+sudo docker logs snapshot-activity-tracker-updater-snapshot-activity-tracker-1 -f | grep -E "CheckDayTransition|Day transition detected|No day transition|Stored day transition marker"
 
 # Expected output when transition detected:
 # 📅 CheckDayTransition: dataMarket=0xF7F21D06894FC378B7E347a6132F8fE1e4f0F371, lastKnownDay=65, currentDay=66, epoch=24285200
@@ -58,7 +58,7 @@ sudo docker logs libp2p-gossipsub-topic-debugger-p2p-debugger-1 -f | grep -E "Ch
 
 ```bash
 # Monitor buffer epoch checks
-sudo docker logs libp2p-gossipsub-topic-debugger-p2p-debugger-1 -f | grep -E "IsBufferEpoch|Buffer epoch reached|No matching buffer epoch"
+sudo docker logs snapshot-activity-tracker-updater-snapshot-activity-tracker-1 -f | grep -E "IsBufferEpoch|Buffer epoch reached|No matching buffer epoch"
 
 # Expected output when buffer epoch matches:
 # 🔍 IsBufferEpoch: Checking if epoch 24285205 is a buffer epoch for dataMarket 0xF7F21D06894FC378B7E347a6132F8fE1e4f0F371
@@ -85,7 +85,7 @@ sudo docker logs libp2p-gossipsub-topic-debugger-p2p-debugger-1 -f | grep -E "Is
 
 ```bash
 # Monitor UpdateFinalRewards calls
-sudo docker logs libp2p-gossipsub-topic-debugger-p2p-debugger-1 -f | grep -E "UpdateFinalRewards: ENTRY|UpdateFinalRewards:.*exiting early|Successfully sent final rewards update"
+sudo docker logs snapshot-activity-tracker-updater-snapshot-activity-tracker-1 -f | grep -E "UpdateFinalRewards: ENTRY|UpdateFinalRewards:.*exiting early|Successfully sent final rewards update"
 
 # Expected output when called:
 # 🎯 UpdateFinalRewards: ENTRY - epoch=24285205, dataMarket=0xF7F21D06894FC378B7E347a6132F8fE1e4f0F371, day=65, eligibleNodes=1000, slotCount=1000
@@ -112,7 +112,7 @@ sudo docker logs libp2p-gossipsub-topic-debugger-p2p-debugger-1 -f | grep -E "Up
 
 ```bash
 # Single command to monitor all key flows
-sudo docker logs libp2p-gossipsub-topic-debugger-p2p-debugger-1 -f | grep -E \
+sudo docker logs snapshot-activity-tracker-updater-snapshot-activity-tracker-1 -f | grep -E \
   "FetchCurrentDay|Day changed|Day unchanged|CheckDayTransition|Day transition detected|No day transition|Stored day transition marker|IsBufferEpoch|Buffer epoch reached|UpdateFinalRewards"
 ```
 
@@ -125,7 +125,7 @@ sudo docker logs libp2p-gossipsub-topic-debugger-p2p-debugger-1 -f | grep -E \
 
 ```bash
 # Connect to Redis container
-sudo docker exec -it libp2p-gossipsub-topic-debugger-redis-1 redis-cli
+sudo docker exec -it snapshot-activity-tracker-updater-redis-1 redis-cli
 
 # List all marker sets (replace with your data market address, lowercase)
 SMEMBERS "DayRolloverEpochMarkerSet.0xf7f21d06894fc378b7e347a6132f8fe1e4f0f371"
@@ -173,7 +173,7 @@ GET "LastKnownDay.0xf7f21d06894fc378b7e347a6132f8fe1e4f0f371"
 ### Step 1: Verify Day Fetching
 ```bash
 # Run for 10-20 epochs and check if day is changing
-sudo docker logs libp2p-gossipsub-topic-debugger-p2p-debugger-1 -f -n 1000 | grep -E "FetchCurrentDay|Day changed|Day unchanged" | tail -20
+sudo docker logs snapshot-activity-tracker-updater-snapshot-activity-tracker-1 -f -n 1000 | grep -E "FetchCurrentDay|Day changed|Day unchanged" | tail -20
 ```
 
 **Questions to answer**:
@@ -186,7 +186,7 @@ sudo docker logs libp2p-gossipsub-topic-debugger-p2p-debugger-1 -f -n 1000 | gre
 ### Step 2: Verify Day Transition Detection
 ```bash
 # Check if transitions are being detected
-sudo docker logs libp2p-gossipsub-topic-debugger-p2p-debugger-1 -f -n 1000 | grep -E "CheckDayTransition|Day transition detected|No day transition" | tail -20
+sudo docker logs snapshot-activity-tracker-updater-snapshot-activity-tracker-1 -f -n 1000 | grep -E "CheckDayTransition|Day transition detected|No day transition" | tail -20
 ```
 
 **Questions to answer**:
@@ -199,7 +199,7 @@ sudo docker logs libp2p-gossipsub-topic-debugger-p2p-debugger-1 -f -n 1000 | gre
 ### Step 3: Verify Marker Storage in Redis
 ```bash
 # Check Redis for markers
-sudo docker exec -it libp2p-gossipsub-topic-debugger-redis-1 redis-cli \
+sudo docker exec -it snapshot-activity-tracker-updater-redis-1 redis-cli \
   SMEMBERS "DayRolloverEpochMarkerSet.0xf7f21d06894fc378b7e347a6132f8fe1e4f0f371"
 ```
 
@@ -213,7 +213,7 @@ sudo docker exec -it libp2p-gossipsub-topic-debugger-redis-1 redis-cli \
 ### Step 4: Verify Buffer Epoch Matching
 ```bash
 # Check if buffer epochs are being matched
-sudo docker logs libp2p-gossipsub-topic-debugger-p2p-debugger-1 -f -n 1000 | grep -E "IsBufferEpoch|Buffer epoch reached|No matching buffer epoch" | tail -20
+sudo docker logs snapshot-activity-tracker-updater-snapshot-activity-tracker-1 -f -n 1000 | grep -E "IsBufferEpoch|Buffer epoch reached|No matching buffer epoch" | tail -20
 ```
 
 **Questions to answer**:
@@ -233,7 +233,7 @@ sudo docker logs libp2p-gossipsub-topic-debugger-p2p-debugger-1 -f -n 1000 | gre
 ### Step 5: Verify UpdateFinalRewards Calls
 ```bash
 # Check if UpdateFinalRewards is being called
-sudo docker logs libp2p-gossipsub-topic-debugger-p2p-debugger-1 -f -n 10000 | grep "UpdateFinalRewards: ENTRY"
+sudo docker logs snapshot-activity-tracker-updater-snapshot-activity-tracker-1 -f -n 10000 | grep "UpdateFinalRewards: ENTRY"
 ```
 
 **Questions to answer**:
@@ -267,7 +267,7 @@ sudo docker logs libp2p-gossipsub-topic-debugger-p2p-debugger-1 -f -n 10000 | gr
 **Investigation**:
 ```bash
 # Check CheckDayTransition logs for comparison details
-sudo docker logs libp2p-gossipsub-topic-debugger-p2p-debugger-1 -f | grep "CheckDayTransition"
+sudo docker logs snapshot-activity-tracker-updater-snapshot-activity-tracker-1 -f | grep "CheckDayTransition"
 ```
 
 **Possible causes**:
@@ -283,11 +283,11 @@ sudo docker logs libp2p-gossipsub-topic-debugger-p2p-debugger-1 -f | grep "Check
 **Investigation**:
 ```bash
 # Check marker details and compare with current epoch
-sudo docker exec -it libp2p-gossipsub-topic-debugger-redis-1 redis-cli \
+sudo docker exec -it snapshot-activity-tracker-updater-redis-1 redis-cli \
   GET "DayRolloverEpochMarkerDetails.0xf7f21d06894fc378b7e347a6132f8fe1e4f0f371.<epoch>"
 
 # Check IsBufferEpoch logs for mismatch details
-sudo docker logs libp2p-gossipsub-topic-debugger-p2p-debugger-1 -f | grep "IsBufferEpoch"
+sudo docker logs snapshot-activity-tracker-updater-snapshot-activity-tracker-1 -f | grep "IsBufferEpoch"
 ```
 
 **Possible causes**:
@@ -303,7 +303,7 @@ sudo docker logs libp2p-gossipsub-topic-debugger-p2p-debugger-1 -f | grep "IsBuf
 **Investigation**:
 ```bash
 # Check if buffer epochs are being reached
-sudo docker logs libp2p-gossipsub-topic-debugger-p2p-debugger-1 -f | grep -E "IsBufferEpoch|Buffer epoch reached"
+sudo docker logs snapshot-activity-tracker-updater-snapshot-activity-tracker-1 -f | grep -E "IsBufferEpoch|Buffer epoch reached"
 ```
 
 **Possible causes**:
@@ -321,8 +321,8 @@ Save this as `check_day_transitions.sh`:
 #!/bin/bash
 
 DATA_MARKET="0xf7f21d06894fc378b7e347a6132f8fe1e4f0f371"
-CONTAINER="libp2p-gossipsub-topic-debugger-p2p-debugger-1"
-REDIS_CONTAINER="libp2p-gossipsub-topic-debugger-redis-1"
+CONTAINER="snapshot-activity-tracker-updater-snapshot-activity-tracker-1"
+REDIS_CONTAINER="snapshot-activity-tracker-updater-redis-1"
 
 echo "=== Day Fetching Status ==="
 sudo docker logs $CONTAINER -n 1000 | grep -E "FetchCurrentDay|Day changed|Day unchanged" | tail -5

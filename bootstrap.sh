@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Bootstrap script for libp2p-gossipsub-topic-debugger
+# Bootstrap script for snapshot-activity-tracker-updater
 # Clones relayer-py repository for building from source (development mode)
 # If ./relayer-py already exists, skips cloning
 # If you want to use pre-built image instead, just don't run this script

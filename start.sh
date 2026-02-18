@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Start script for libp2p-gossipsub-topic-debugger
+# Start script for snapshot-activity-tracker-updater
 # Automatically handles both development (build from source) and production (use pre-built image) modes
 
 set -e
@@ -65,5 +65,5 @@ fi
 $DOCKER_COMPOSE_CMD up -d --build
 
 # Tail logs for the main container
-echo "📋 Tailing logs for p2p-debugger container..."
-$DOCKER_COMPOSE_CMD logs -f p2p-debugger
+echo "📋 Tailing logs for snapshot-activity-tracker container..."
+$DOCKER_COMPOSE_CMD logs -f snapshot-activity-tracker

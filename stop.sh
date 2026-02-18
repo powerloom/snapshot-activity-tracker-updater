@@ -10,7 +10,7 @@ fi
 # First, force remove any stuck containers directly (bypasses docker-compose)
 # This handles containers stuck in bad states (e.g., trying to pull non-existent images)
 echo "🧹 Force removing any stuck containers..."
-STUCK_CONTAINERS=$(docker ps -a --filter "name=p2p-debugger" --format "{{.ID}}" 2>/dev/null || true)
+STUCK_CONTAINERS=$(docker ps -a --filter "name=snapshot-activity-tracker" --format "{{.ID}}" 2>/dev/null || true)
 if [ -n "$STUCK_CONTAINERS" ]; then
     echo "$STUCK_CONTAINERS" | while read -r container_id; do
         echo "   Force removing container $container_id..."
