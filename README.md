@@ -24,6 +24,18 @@ This peer acts as a neutral observer and source for snapshotter and validator ac
 - **Consensus Engine**: Aggregates validator outputs using majority vote logic
 - **Activity Updater**: Submits on-chain updates for snapshotter activity metrics
 - **Relayer Integration**: Queues and broadcasts update transactions via relayer-py
+- **Dashboard API**: Optional web dashboard for network activity visualization
+
+### Dashboard
+
+The optional dashboard API provides real-time visualization of network activity:
+
+- **Network Topology**: Interactive force-directed graph showing validators, slots, and projects
+- **Epoch Tracking**: View per-epoch aggregations and validator contributions
+- **Validator Leaderboard**: See which validators are most active
+- **Slot Eligibility**: Track slot submission counts and eligibility status
+
+Access at `http://localhost:8080` when enabled (see Dashboard Configuration below).
 
 ### Data Flow
 
@@ -195,6 +207,58 @@ The service aggregates validator outputs using majority vote:
 | `RELAYER_URL` | `http://relayer-py:8080` | Relayer service URL |
 | `VPA_SIGNER_ADDRESSES` | *required* | Signer addresses (must be trusted updaters) |
 | `VPA_SIGNER_PRIVATE_KEYS` | *required* | Signer private keys (no 0x prefix) |
+| `DASHBOARD_PORT` | `8080` | Dashboard API port |
+| `ENABLE_DASHBOARD` | `true` | Enable dashboard API service |
+
+## Dashboard Configuration
+
+The dashboard is an optional service that visualizes network activity from tracker data.
+
+### Enabling the Dashboard
+
+Add to your `.env`:
+
+```bash
+# Dashboard API
+DASHBOARD_PORT=8080
+ENABLE_DASHBOARD=true
+```
+
+### Building with Dashboard
+
+```bash
+# Build dashboard-api binary
+go build -o bin/dashboard-api ./cmd/dashboard-api
+
+# Build frontend (in frontend/ directory)
+cd frontend && npm install && npm run build && cd ..
+```
+
+### Running the Dashboard
+
+With docker-compose, the dashboard starts automatically when `ENABLE_DASHBOARD=true`:
+
+```bash
+docker-compose up dashboard-api
+```
+
+Access at:
+- UI: `http://localhost:8080`
+- API health: `http://localhost:8080/api/health`
+- Network topology: `http://localhost:8080/api/network/topology`
+
+### Dashboard API Endpoints
+
+| Endpoint | Description |
+|----------|-------------|
+| `/api/health` | Health check |
+| `/api/dashboard/summary` | Overview stats |
+| `/api/network/topology` | Network graph data |
+| `/api/epochs` | List epochs |
+| `/api/validators` | Validator list |
+| `/api/slots` | Slot list |
+| `/api/projects` | Project vote counts |
+| `/api/timeline` | Timeline of events |
 
 ## Troubleshooting
 

@@ -135,6 +135,45 @@ services:
         max-file: "5"
         compress: "true"
 
+  # dashboard-api - Network activity dashboard
+  dashboard-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: dashboard
+    ports:
+      - "${DASHBOARD_PORT:-8080}:8080"
+    env_file:
+      - .env
+    volumes:
+      # Read-only access to tally dumps
+      - ./tallies:/app/tallies:ro
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_DB=0
+      - DATA_MARKET_ADDRESS=${DATA_MARKET_ADDRESS}
+      - TALLY_DUMP_DIR=/app/tallies
+      - DASHBOARD_PORT=${DASHBOARD_PORT:-8080}
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - tracker-net
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8080/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+        compress: "true"
+
 networks:
   tracker-net:
     driver: bridge
