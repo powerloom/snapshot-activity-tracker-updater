@@ -143,6 +143,42 @@ The `start.sh` script automatically:
 - If exists: builds from source (development mode)
 - If missing: uses pre-built Docker image (production mode)
 
+### Operation Modes
+
+The `start.sh` script supports three operation modes:
+
+#### Full Mode (Default)
+```bash
+./start.sh
+# or
+./start.sh full
+```
+Starts: tracker, redis, relayer-py, rabbitmq, dashboard-api
+- Full P2P participation
+- On-chain contract updates enabled
+- Dashboard visualization available
+- **Est. RAM: ~1.5GB**
+
+#### Watcher Mode
+```bash
+./start.sh watcher
+```
+Starts: tracker, redis, dashboard-api
+- Full P2P participation
+- NO on-chain updates (relayer-py, rabbitmq not started)
+- Dashboard visualization available
+- **Est. RAM: ~800MB**
+
+#### Minimal Mode
+```bash
+./start.sh minimal
+```
+Starts: tracker, redis only
+- Full P2P participation
+- NO on-chain updates
+- NO dashboard
+- **Est. RAM: ~400MB**
+
 #### 4. Monitor Operation
 
 ```bash

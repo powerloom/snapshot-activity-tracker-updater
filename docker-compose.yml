@@ -22,8 +22,6 @@ services:
     depends_on:
       redis:
         condition: service_healthy
-      relayer-py:
-        condition: service_healthy
     networks:
       - tracker-net
     command: ["./snapshot-activity-tracker"]
@@ -51,9 +49,11 @@ services:
         max-file: "3"
         compress: "true"
 
-  # RabbitMQ - Required by relayer-py
+  # RabbitMQ - Required by relayer-py (full mode only)
   rabbitmq:
     image: rabbitmq:3-management-alpine
+    profiles:
+      - full
     ports:
       - "${RABBITMQ_PORT:-5672}:5672"
       - "${RABBITMQ_MGMT_PORT:-15672}:15672"
@@ -78,12 +78,14 @@ services:
         max-file: "5"
         compress: "true"
 
-  # relayer-py - Python-based transaction relayer
+  # relayer-py - Python-based transaction relayer (full mode only)
   # Image tag: Set RELAYER_PY_IMAGE_TAG env var (defaults to "latest")
   # If ./relayer-py directory exists, builds from source and tags with image name
   # If ./relayer-py doesn't exist, pulls pre-built image from registry
   relayer-py:
     image: ${RELAYER_PY_IMAGE:-ghcr.io/powerloom/relayer-py:${RELAYER_PY_IMAGE_TAG:-latest}}
+    profiles:
+      - full
     build:
       context: ./relayer-py
       dockerfile: Dockerfile
@@ -135,12 +137,15 @@ services:
         max-file: "5"
         compress: "true"
 
-  # dashboard-api - Network activity dashboard
+  # dashboard-api - Network activity dashboard (full and watcher modes)
   dashboard-api:
     build:
       context: .
       dockerfile: Dockerfile
       target: dashboard
+    profiles:
+      - full
+      - watcher
     ports:
       - "${DASHBOARD_PORT:-8080}:8080"
     env_file:

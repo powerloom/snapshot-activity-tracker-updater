@@ -2,8 +2,24 @@
 
 # Start script for snapshot-activity-tracker-updater
 # Automatically handles both development (build from source) and production (use pre-built image) modes
+# Supports operation modes: full, watcher, minimal
 
 set -e
+
+# Mode selection
+MODE="${1:-full}"
+case "$MODE" in
+  full|watcher|minimal)
+    echo "🚀 Starting in $MODE mode..."
+    ;;
+  *)
+    echo "Usage: $0 [full|watcher|minimal]"
+    echo "  full    - Tracker + on-chain updates + dashboard (default)"
+    echo "  watcher - Tracker + dashboard, no on-chain updates"
+    echo "  minimal - Tracker only, no dashboard, no on-chain updates"
+    exit 1
+    ;;
+esac
 
 # Determine docker compose command
 if command -v docker-compose &> /dev/null; then
@@ -59,10 +75,28 @@ else
     $DOCKER_COMPOSE_CMD build 2>&1 | grep -v "relayer-py" || true
 fi
 
+# Build docker compose profiles based on mode
+COMPOSE_PROFILES=""
+case "$MODE" in
+  full)
+    COMPOSE_PROFILES="full,watcher"  # Both profiles = all services
+    echo "   Services: tracker, redis, relayer-py, rabbitmq, dashboard-api"
+    ;;
+  watcher)
+    COMPOSE_PROFILES="watcher"  # No relayer-py/rabbitmq
+    echo "   Services: tracker, redis, dashboard-api"
+    ;;
+  minimal)
+    COMPOSE_PROFILES=""  # No additional profiles
+    echo "   Services: tracker, redis"
+    ;;
+esac
+
 # Start services with --build flag to ensure latest build is used
 # In development mode, this uses the locally built image
 # In production mode, this pulls/uses the pre-built image
-$DOCKER_COMPOSE_CMD up -d --build
+export COMPOSE_PROFILES
+$DOCKER_COMPOSE_CMD --profile "$COMPOSE_PROFILES" up -d --build
 
 # Tail logs for the main container
 echo "📋 Tailing logs for snapshot-activity-tracker container..."
