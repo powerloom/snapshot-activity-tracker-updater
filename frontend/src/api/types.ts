@@ -23,6 +23,10 @@ export interface TopologyNode {
   type: 'validator' | 'slot' | 'project';
   label: string;
   properties?: Record<string, unknown>;
+  x?: number;
+  y?: number;
+  fx?: number | null;
+  fy?: number | null;
 }
 
 export interface TopologyLink {

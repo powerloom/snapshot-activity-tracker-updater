@@ -21,3 +21,12 @@ docker-compose.override.yml
 # Cloned dependencies (development mode)
 relayer-py/
 relayer-logs/
+
+# Frontend build artifacts
+frontend/dist/
+frontend/node_modules/
+
+# Logs
+logs/
+logs/archive/
+*.log

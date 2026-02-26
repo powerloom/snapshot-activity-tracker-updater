@@ -11,7 +11,6 @@ interface NetworkTopologyProps {
 const NetworkTopology: React.FC<NetworkTopologyProps> = ({ data, isLoading, error }) => {
   const svgRef = useRef<SVGSVGElement>(null);
   const [selectedNode, setSelectedNode] = useState<TopologyNode | null>(null);
-  const [hoveredNode, setHoveredNode] = useState<string | null>(null);
 
   useEffect(() => {
     if (!data || !svgRef.current) return;
@@ -26,7 +25,7 @@ const NetworkTopology: React.FC<NetworkTopologyProps> = ({ data, isLoading, erro
     // Create simulation
     const simulation = d3
       .forceSimulation(data.nodes as d3.SimulationNodeDatum[])
-      .force('link', d3.forceLink(data.links as d3.SimulationLinkDatum<d3.SimulationNodeDatum>())
+      .force('link', d3.forceLink(data.links as any)
         .id((d: any) => d.id)
         .distance(100))
       .force('charge', d3.forceManyBody().strength(-300))
@@ -96,15 +95,13 @@ const NetworkTopology: React.FC<NetworkTopologyProps> = ({ data, isLoading, erro
       })
       .attr('stroke', '#fff')
       .attr('stroke-width', 2)
-      .on('mouseover', function(event, d: TopologyNode) {
-        setHoveredNode(d.id);
+      .on('mouseover', function() {
         d3.select(this).attr('stroke-width', 4);
       })
       .on('mouseout', function() {
-        setHoveredNode(null);
         d3.select(this).attr('stroke-width', 2);
       })
-      .on('click', (event, d: TopologyNode) => {
+      .on('click', (_event, d: TopologyNode) => {
         setSelectedNode(d);
       });
 
@@ -138,19 +135,19 @@ const NetworkTopology: React.FC<NetworkTopologyProps> = ({ data, isLoading, erro
     // Drag functions
     function dragstarted(event: d3.D3DragEvent<SVGGElement, TopologyNode, d3.SubjectPosition>, d: TopologyNode) {
       if (!event.active) simulation.alphaTarget(0.3).restart();
-      (d as any).fx = d.x || 0;
-      (d as any).fy = d.y || 0;
+      d.fx = d.x ?? 0;
+      d.fy = d.y ?? 0;
     }
 
     function dragged(event: d3.D3DragEvent<SVGGElement, TopologyNode, d3.SubjectPosition>, d: TopologyNode) {
-      (d as any).fx = event.x;
-      (d as any).fy = event.y;
+      d.fx = event.x;
+      d.fy = event.y;
     }
 
     function dragended(event: d3.D3DragEvent<SVGGElement, TopologyNode, d3.SubjectPosition>, d: TopologyNode) {
       if (!event.active) simulation.alphaTarget(0);
-      (d as any).fx = null;
-      (d as any).fy = null;
+      d.fx = null;
+      d.fy = null;
     }
 
     return () => {
