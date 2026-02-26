@@ -22,15 +22,7 @@ RUN npm install
 COPY frontend/ ./
 RUN npm run build
 
-# Stage 4: Final runtime - snapshot-activity-tracker (default target)
-FROM golang:1.25-alpine
-WORKDIR /app
-RUN apk add --no-cache ca-certificates curl
-COPY --from=tracker-builder /app/snapshot-activity-tracker .
-EXPOSE 8001
-CMD ["./snapshot-activity-tracker"]
-
-# Stage 5: Dashboard runtime
+# Stage 4: Dashboard runtime (named stage, used via --target dashboard)
 FROM golang:1.25-alpine AS dashboard
 WORKDIR /app
 RUN apk add --no-cache ca-certificates wget
@@ -40,3 +32,11 @@ COPY --from=dashboard-builder /app/dashboard-api .
 COPY --from=frontend-builder /app/dist ./frontend/dist
 EXPOSE 8080
 CMD ["./dashboard-api"]
+
+# Stage 5: Final runtime - snapshot-activity-tracker (default target, last stage = default)
+FROM golang:1.25-alpine AS tracker
+WORKDIR /app
+RUN apk add --no-cache ca-certificates curl
+COPY --from=tracker-builder /app/snapshot-activity-tracker .
+EXPOSE 8001
+CMD ["./snapshot-activity-tracker"]
