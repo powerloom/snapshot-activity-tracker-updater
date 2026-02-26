@@ -38,5 +38,6 @@ FROM golang:1.25-alpine AS tracker
 WORKDIR /app
 RUN apk add --no-cache ca-certificates curl
 COPY --from=tracker-builder /app/snapshot-activity-tracker .
+COPY --from=tracker-builder /app/contract/ ./contract/
 EXPOSE 8001
 CMD ["./snapshot-activity-tracker"]
