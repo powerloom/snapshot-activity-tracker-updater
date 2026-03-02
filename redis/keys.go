@@ -19,8 +19,16 @@ func EligibleSlotSubmissionKey(dataMarketAddress string, slotID string, day stri
 
 // EligibleNodesByDayKey returns the Redis key for eligible nodes set for a day
 // Format: EligibleNodesByDay.{dataMarket}.{day}
+// Contains only slots with count >= dailySnapshotQuota (for rewards eligibility)
 func EligibleNodesByDayKey(dataMarketAddress string, day string) string {
 	return fmt.Sprintf("EligibleNodesByDay.%s.%s", strings.ToLower(dataMarketAddress), day)
+}
+
+// SlotsWithSubmissionsByDayKey returns the Redis key for the set of ALL slots with submissions for a day
+// Format: SlotsWithSubmissionsByDay.{dataMarket}.{day}
+// Contains all slots that have any submission count (used for UpdateSubmissionCounts on-chain updates)
+func SlotsWithSubmissionsByDayKey(dataMarketAddress string, day string) string {
+	return fmt.Sprintf("SlotsWithSubmissionsByDay.%s.%s", strings.ToLower(dataMarketAddress), day)
 }
 
 // EligibleSlotSubmissionsByEpochKey returns the Redis key for eligible slot submissions by epoch

@@ -257,7 +257,13 @@ func (sc *SubmissionCounter) UpdateEligibleCountsForDay(epochID uint64, dataMark
 			}
 		}
 
-		// Add to eligible nodes set ONLY if count meets quota
+		// Add to slots-with-submissions set (ALL slots - for on-chain UpdateSubmissionCounts)
+		slotsWithSubmissionsKey := redis.SlotsWithSubmissionsByDayKey(dataMarket, day)
+		if err := redis.SAdd(sc.ctx, slotsWithSubmissionsKey, slotIDStr); err != nil {
+			log.Printf("⚠️ Failed to add slot %d to slots-with-submissions set: %v", slotID, err)
+		}
+
+		// Add to eligible nodes set ONLY if count meets quota (for rewards eligibility)
 		// Eligibility: count >= dailySnapshotQuota (or count > 0 if quota is 0)
 		isEligible := false
 		if dailySnapshotQuota == 0 {
@@ -300,12 +306,18 @@ func (sc *SubmissionCounter) GetCounts(dataMarket string) map[uint64]int {
 
 // GetCountsForDay returns the counts for a specific day
 // Reads from Redis first (source of truth), falls back to in-memory cache
+// Returns ALL slots with submissions (not just quota-met) - for on-chain UpdateSubmissionCounts
 func (sc *SubmissionCounter) GetCountsForDay(dataMarket string, day string) map[uint64]int {
 	// Try Redis first (source of truth)
 	if redis.RedisClient != nil {
-		// Get all eligible slots for this day
-		eligibleNodesKey := redis.EligibleNodesByDayKey(dataMarket, day)
-		slotIDs, err := redis.SMembers(sc.ctx, eligibleNodesKey)
+		// Get ALL slots with submissions for this day (not just eligible/quota-met)
+		slotsWithSubmissionsKey := redis.SlotsWithSubmissionsByDayKey(dataMarket, day)
+		slotIDs, err := redis.SMembers(sc.ctx, slotsWithSubmissionsKey)
+		// Fallback to EligibleNodesByDayKey if SlotsWithSubmissionsByDayKey is empty (e.g. pre-upgrade Redis state)
+		if err == nil && len(slotIDs) == 0 {
+			eligibleNodesKey := redis.EligibleNodesByDayKey(dataMarket, day)
+			slotIDs, err = redis.SMembers(sc.ctx, eligibleNodesKey)
+		}
 		if err == nil && len(slotIDs) > 0 {
 			result := make(map[uint64]int)
 			for _, slotIDStr := range slotIDs {
@@ -458,9 +470,9 @@ func (sc *SubmissionCounter) ResetCountsForDay(dataMarket string, day string) {
 	if redis.RedisClient != nil {
 		keysToDelete := make([]string, 0)
 
-		// Get all slot IDs from eligible nodes set for this day
-		eligibleNodesKey := redis.EligibleNodesByDayKey(dataMarket, day)
-		slotIDs, err := redis.SMembers(sc.ctx, eligibleNodesKey)
+		// Get all slot IDs from slots-with-submissions set (ALL slots for this day)
+		slotsWithSubmissionsKey := redis.SlotsWithSubmissionsByDayKey(dataMarket, day)
+		slotIDs, err := redis.SMembers(sc.ctx, slotsWithSubmissionsKey)
 		if err == nil && len(slotIDs) > 0 {
 			// Delete slot-specific keys for each slot
 			for _, slotIDStr := range slotIDs {
@@ -471,8 +483,11 @@ func (sc *SubmissionCounter) ResetCountsForDay(dataMarket string, day string) {
 			}
 		}
 
-		// Delete the eligible nodes set itself
-		keysToDelete = append(keysToDelete, eligibleNodesKey)
+		// Delete the eligible nodes set and slots-with-submissions set
+		keysToDelete = append(keysToDelete,
+			redis.EligibleNodesByDayKey(dataMarket, day),
+			slotsWithSubmissionsKey,
+		)
 
 		// Delete epoch-specific keys for this day (scan pattern)
 		// Note: We can't easily enumerate all epoch IDs, so we'll use expiration instead
