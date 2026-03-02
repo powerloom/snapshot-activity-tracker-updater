@@ -95,8 +95,9 @@ esac
 # Start services with --build flag to ensure latest build is used
 # In development mode, this uses the locally built image
 # In production mode, this pulls/uses the pre-built image
+# COMPOSE_PROFILES activates profiles (comma-separated); --profile "full,watcher" would be wrong (single profile name)
 export COMPOSE_PROFILES
-$DOCKER_COMPOSE_CMD --profile "$COMPOSE_PROFILES" up -d --build
+$DOCKER_COMPOSE_CMD up -d --build
 
 # Tail logs for the main container
 echo "📋 Tailing logs for snapshot-activity-tracker container..."
