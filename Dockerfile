@@ -6,12 +6,14 @@ RUN go mod download
 COPY . .
 RUN go build -o snapshot-activity-tracker .
 
-# Stage 2: Build dashboard-api
+# Stage 2: Build dashboard-api (depends on frontend build for embed)
 FROM golang:1.25-alpine AS dashboard-builder
 WORKDIR /app
 COPY go.mod go.sum ./
 RUN go mod download
 COPY . .
+# Overlay real frontend build so go:embed picks it up (replaces cmd/dashboard-api/frontend/dist stub)
+COPY --from=frontend-builder /app/dist ./cmd/dashboard-api/frontend/dist
 RUN go build -o dashboard-api ./cmd/dashboard-api
 
 # Stage 3: Build frontend
