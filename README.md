@@ -268,7 +268,8 @@ When iterating on dashboard UI, avoid rebuilding the whole stack:
    ```bash
    cd frontend && npm run dev
    ```
-   UI at http://localhost:3000 (proxies /api to dashboard-api container)
+   UI at http://localhost:3000 (proxies /api to dashboard-api). If DASHBOARD_PORT≠8080, set:
+   `VITE_API_PROXY_TARGET=http://localhost:YOUR_PORT`
 
 3. Rebuild only dashboard when needed:
    ```bash
