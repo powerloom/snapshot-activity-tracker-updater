@@ -6,7 +6,15 @@ RUN go mod download
 COPY . .
 RUN go build -o snapshot-activity-tracker .
 
-# Stage 2: Build dashboard-api (depends on frontend build for embed)
+# Stage 2: Build frontend (must be before dashboard-builder which depends on it)
+FROM node:20-alpine AS frontend-builder
+WORKDIR /app
+COPY frontend/package*.json ./
+RUN npm install
+COPY frontend/ ./
+RUN npm run build
+
+# Stage 3: Build dashboard-api (depends on frontend build for embed)
 FROM golang:1.25-alpine AS dashboard-builder
 WORKDIR /app
 COPY go.mod go.sum ./
@@ -15,14 +23,6 @@ COPY . .
 # Overlay real frontend build so go:embed picks it up (replaces cmd/dashboard-api/frontend/dist stub)
 COPY --from=frontend-builder /app/dist ./cmd/dashboard-api/frontend/dist
 RUN go build -o dashboard-api ./cmd/dashboard-api
-
-# Stage 3: Build frontend
-FROM node:20-alpine AS frontend-builder
-WORKDIR /app
-COPY frontend/package*.json ./
-RUN npm install
-COPY frontend/ ./
-RUN npm run build
 
 # Stage 4: Dashboard runtime (named stage, used via --target dashboard)
 FROM golang:1.25-alpine AS dashboard
