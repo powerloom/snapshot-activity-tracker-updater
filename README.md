@@ -154,9 +154,7 @@ The `start.sh` script supports three operation modes:
 ./start.sh full
 ```
 Starts: tracker, redis, relayer-py, rabbitmq, dashboard-api
-- Full P2P participation
-- On-chain contract updates enabled
-- Dashboard visualization available
+- Watching + on-chain commitment + dashboard
 - **Est. RAM: ~1.5GB**
 
 #### Watcher Mode
@@ -164,9 +162,7 @@ Starts: tracker, redis, relayer-py, rabbitmq, dashboard-api
 ./start.sh watcher
 ```
 Starts: tracker, redis, dashboard-api
-- Full P2P participation
-- NO on-chain updates (relayer-py, rabbitmq not started)
-- Dashboard visualization available
+- Watching + dashboard (no on-chain updates)
 - **Est. RAM: ~800MB**
 
 #### Minimal Mode
@@ -174,9 +170,8 @@ Starts: tracker, redis, dashboard-api
 ./start.sh minimal
 ```
 Starts: tracker, redis only
-- Full P2P participation
-- NO on-chain updates
-- NO dashboard
+- Watching only (collect finalizations, save tallies)
+- No dashboard, no on-chain
 - **Est. RAM: ~400MB**
 
 #### 4. Monitor Operation
@@ -260,6 +255,28 @@ DASHBOARD_PORT=8080
 ENABLE_DASHBOARD=true
 ```
 
+### Dashboard Development (No Full Rebuild)
+
+When iterating on dashboard UI, avoid rebuilding the whole stack:
+
+1. Start backend (watcher or full mode):
+   ```bash
+   ./start.sh watcher   # or full
+   ```
+
+2. Run frontend locally with hot reload:
+   ```bash
+   cd frontend && npm run dev
+   ```
+   UI at http://localhost:3000 (proxies /api to dashboard-api container)
+
+3. Rebuild only dashboard when needed:
+   ```bash
+   docker compose build dashboard-api && docker compose up -d dashboard-api
+   ```
+
+Dashboard uses `Dockerfile.dashboard`; tracker uses `Dockerfile`. They are independent.
+
 ### Building with Dashboard
 
 ```bash
@@ -272,16 +289,15 @@ cd frontend && npm install && npm run build && cd ..
 
 ### Running the Dashboard
 
-With docker-compose, the dashboard starts automatically when `ENABLE_DASHBOARD=true`:
+With docker-compose, the dashboard starts in watcher/full modes:
 
 ```bash
-docker-compose up dashboard-api
+./start.sh watcher   # or full
 ```
 
-Access at:
-- UI: `http://localhost:8080`
-- API health: `http://localhost:8080/api/health`
-- Network topology: `http://localhost:8080/api/network/topology`
+Access at (production: embedded UI in container):
+- UI: `http://localhost:${DASHBOARD_PORT:-8080}`
+- API health: `http://localhost:${DASHBOARD_PORT:-8080}/api/health`
 
 ### Dashboard API Endpoints
 

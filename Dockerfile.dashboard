@@ -1,0 +1,27 @@
+# Dashboard-only Dockerfile - use this to rebuild ONLY the dashboard
+# Tracker and dashboard are independent; dashboard changes don't require tracker rebuild
+#
+# Build: docker build -f Dockerfile.dashboard -t snapshot-activity-tracker-dashboard .
+# Or:   docker compose build dashboard-api
+
+FROM node:20-alpine AS frontend-builder
+WORKDIR /app
+COPY frontend/package*.json ./
+RUN npm install
+COPY frontend/ ./
+RUN npm run build
+
+FROM golang:1.25-alpine AS dashboard-builder
+WORKDIR /app
+COPY go.mod go.sum ./
+RUN go mod download
+COPY . .
+COPY --from=frontend-builder /app/dist ./cmd/dashboard-api/frontend/dist
+RUN go build -o dashboard-api ./cmd/dashboard-api
+
+FROM golang:1.25-alpine AS dashboard
+WORKDIR /app
+RUN apk add --no-cache ca-certificates wget
+COPY --from=dashboard-builder /app/dashboard-api .
+EXPOSE 8080
+CMD ["./dashboard-api"]

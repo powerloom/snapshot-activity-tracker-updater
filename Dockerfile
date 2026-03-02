@@ -1,4 +1,8 @@
-# Stage 1: Build snapshot-activity-tracker
+# Tracker-only Dockerfile - watching, tally dumps, optional on-chain updates
+# Dashboard has its own Dockerfile.dashboard - rebuild dashboard separately
+#
+# Build: docker build -t snapshot-activity-tracker .
+
 FROM golang:1.25-alpine AS tracker-builder
 WORKDIR /app
 COPY go.mod go.sum ./
@@ -6,36 +10,6 @@ RUN go mod download
 COPY . .
 RUN go build -o snapshot-activity-tracker .
 
-# Stage 2: Build frontend (must be before dashboard-builder which depends on it)
-FROM node:20-alpine AS frontend-builder
-WORKDIR /app
-COPY frontend/package*.json ./
-RUN npm install
-COPY frontend/ ./
-RUN npm run build
-
-# Stage 3: Build dashboard-api (depends on frontend build for embed)
-FROM golang:1.25-alpine AS dashboard-builder
-WORKDIR /app
-COPY go.mod go.sum ./
-RUN go mod download
-COPY . .
-# Overlay real frontend build so go:embed picks it up (replaces cmd/dashboard-api/frontend/dist stub)
-COPY --from=frontend-builder /app/dist ./cmd/dashboard-api/frontend/dist
-RUN go build -o dashboard-api ./cmd/dashboard-api
-
-# Stage 4: Dashboard runtime (named stage, used via --target dashboard)
-FROM golang:1.25-alpine AS dashboard
-WORKDIR /app
-RUN apk add --no-cache ca-certificates wget
-# Copy dashboard-api binary
-COPY --from=dashboard-builder /app/dashboard-api .
-# Copy frontend build
-COPY --from=frontend-builder /app/dist ./frontend/dist
-EXPOSE 8080
-CMD ["./dashboard-api"]
-
-# Stage 5: Final runtime - snapshot-activity-tracker (default target, last stage = default)
 FROM golang:1.25-alpine AS tracker
 WORKDIR /app
 RUN apk add --no-cache ca-certificates curl

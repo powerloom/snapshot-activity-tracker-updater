@@ -1,8 +1,14 @@
 #!/bin/bash
 
 # Start script for snapshot-activity-tracker-updater
-# Automatically handles both development (build from source) and production (use pre-built image) modes
-# Supports operation modes: full, watcher, minimal
+# Supports operation modes: minimal, watcher, full
+#
+# Modes:
+#   minimal - Watching only: tracker + redis (collect finalizations, save tallies)
+#   watcher - Watching + dashboard: tracker + redis + dashboard-api
+#   full    - Watching + on-chain + dashboard: tracker + redis + relayer + rabbitmq + dashboard-api
+#
+# Dashboard dev (no full rebuild): docker compose --profile watcher up -d && cd frontend && npm run dev
 
 set -e
 
@@ -13,10 +19,10 @@ case "$MODE" in
     echo "🚀 Starting in $MODE mode..."
     ;;
   *)
-    echo "Usage: $0 [full|watcher|minimal]"
-    echo "  full    - Tracker + on-chain updates + dashboard (default)"
-    echo "  watcher - Tracker + dashboard, no on-chain updates"
-    echo "  minimal - Tracker only, no dashboard, no on-chain updates"
+    echo "Usage: $0 [minimal|watcher|full]"
+    echo "  minimal - Watching only: tracker + redis (no dashboard, no on-chain)"
+    echo "  watcher - Watching + dashboard: tracker + redis + dashboard-api"
+    echo "  full    - Full: tracker + redis + relayer + rabbitmq + dashboard-api"
     exit 1
     ;;
 esac
@@ -58,46 +64,47 @@ else
     fi
 fi
 
-# Build and start services
-echo "🚀 Building and starting services..."
-
-# CRITICAL: Always use --build flag to force building when context exists
-# This ensures docker-compose builds from source instead of pulling image
-# When ./relayer-py exists: docker-compose will build (build takes precedence)
-# When ./relayer-py doesn't exist: docker-compose will skip build and use image
-if [ -d "$RELAYER_DIR" ]; then
-    # Development mode: explicitly build to ensure we use source, not pulled image
-    echo "   Building all services (including relayer-py from source)..."
-    $DOCKER_COMPOSE_CMD build
-else
-    # Production mode: build other services, relayer-py will use image
-    echo "   Building other services (relayer-py will use pre-built image)..."
-    $DOCKER_COMPOSE_CMD build 2>&1 | grep -v "relayer-py" || true
-fi
-
 # Build docker compose profiles based on mode
 COMPOSE_PROFILES=""
 case "$MODE" in
   full)
-    COMPOSE_PROFILES="full,watcher"  # Both profiles = all services
+    COMPOSE_PROFILES="full,watcher"
     echo "   Services: tracker, redis, relayer-py, rabbitmq, dashboard-api"
     ;;
   watcher)
-    COMPOSE_PROFILES="watcher"  # No relayer-py/rabbitmq
+    COMPOSE_PROFILES="watcher"
     echo "   Services: tracker, redis, dashboard-api"
     ;;
   minimal)
-    COMPOSE_PROFILES=""  # No additional profiles
+    COMPOSE_PROFILES=""
     echo "   Services: tracker, redis"
     ;;
 esac
 
-# Start services with --build flag to ensure latest build is used
-# In development mode, this uses the locally built image
-# In production mode, this pulls/uses the pre-built image
-# COMPOSE_PROFILES activates profiles (comma-separated); --profile "full,watcher" would be wrong (single profile name)
+# Build only the services needed for this mode (avoids rebuilding dashboard when in minimal)
+case "$MODE" in
+  full)
+    if [ -d "$RELAYER_DIR" ]; then
+      echo "🚀 Building: tracker, dashboard-api, relayer-py"
+      $DOCKER_COMPOSE_CMD build snapshot-activity-tracker dashboard-api relayer-py
+    else
+      echo "🚀 Building: tracker, dashboard-api (relayer-py from registry)"
+      $DOCKER_COMPOSE_CMD build snapshot-activity-tracker dashboard-api
+    fi
+    ;;
+  watcher)
+    echo "🚀 Building: tracker, dashboard-api"
+    $DOCKER_COMPOSE_CMD build snapshot-activity-tracker dashboard-api
+    ;;
+  minimal)
+    echo "🚀 Building: tracker"
+    $DOCKER_COMPOSE_CMD build snapshot-activity-tracker
+    ;;
+esac
+
+# Start services
 export COMPOSE_PROFILES
-$DOCKER_COMPOSE_CMD up -d --build
+$DOCKER_COMPOSE_CMD up -d
 
 # Tail logs for the main container
 echo "📋 Tailing logs for snapshot-activity-tracker container..."

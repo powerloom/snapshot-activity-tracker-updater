@@ -138,15 +138,15 @@ services:
         compress: "true"
 
   # dashboard-api - Network activity dashboard (full and watcher modes)
+  # Uses Dockerfile.dashboard - rebuild only this when changing dashboard: docker compose build dashboard-api
   # DASHBOARD_PORT: app listens on it, host maps to it (e.g. 8085:8085)
   dashboard-api:
     build:
       context: .
-      dockerfile: Dockerfile
-      target: dashboard
+      dockerfile: Dockerfile.dashboard
     profiles:
-      - full
       - watcher
+      - full
     ports:
       - "127.0.0.1:${DASHBOARD_PORT:-8080}:${DASHBOARD_PORT:-8080}"
     env_file:

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import * as d3 from 'd3';
 import type { NetworkTopology, TopologyNode, TopologyLink } from '../api/types';
+import { useTheme } from '../contexts/ThemeContext';
 
 interface NetworkTopologyProps {
   data: NetworkTopology | undefined;
@@ -11,12 +12,17 @@ interface NetworkTopologyProps {
 const NetworkTopology: React.FC<NetworkTopologyProps> = ({ data, isLoading, error }) => {
   const svgRef = useRef<SVGSVGElement>(null);
   const [selectedNode, setSelectedNode] = useState<TopologyNode | null>(null);
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
 
   useEffect(() => {
     if (!data || !svgRef.current) return;
 
     // Clear previous visualization
     d3.select(svgRef.current).selectAll('*').remove();
+
+    const textColor = isDark ? '#e5e7eb' : '#334155';
+    const strokeColor = isDark ? '#374151' : '#ffffff';
 
     const svg = d3.select(svgRef.current);
     const width = svgRef.current.clientWidth;
@@ -93,7 +99,7 @@ const NetworkTopology: React.FC<NetworkTopologyProps> = ({ data, isLoading, erro
           default: return '#94a3b8';
         }
       })
-      .attr('stroke', '#fff')
+      .attr('stroke', strokeColor)
       .attr('stroke-width', 2)
       .on('mouseover', function() {
         d3.select(this).attr('stroke-width', 4);
@@ -118,7 +124,7 @@ const NetworkTopology: React.FC<NetworkTopologyProps> = ({ data, isLoading, erro
       })
       .attr('dy', '.35em')
       .attr('font-size', '12px')
-      .attr('fill', '#334155')
+      .attr('fill', textColor)
       .style('pointer-events', 'none');
 
     // Update positions on tick
@@ -153,7 +159,7 @@ const NetworkTopology: React.FC<NetworkTopologyProps> = ({ data, isLoading, erro
     return () => {
       simulation.stop();
     };
-  }, [data]);
+  }, [data, isDark]);
 
   if (isLoading) {
     return (
@@ -174,7 +180,7 @@ const NetworkTopology: React.FC<NetworkTopologyProps> = ({ data, isLoading, erro
   if (!data || data.nodes.length === 0) {
     return (
       <div className="flex items-center justify-center h-96">
-        <div className="text-gray-500">No network data available</div>
+        <div className="text-gray-500 dark:text-gray-400">No network data available</div>
       </div>
     );
   }
@@ -183,21 +189,21 @@ const NetworkTopology: React.FC<NetworkTopologyProps> = ({ data, isLoading, erro
     <div className="relative w-full h-full">
       <svg
         ref={svgRef}
-        className="w-full h-full border border-gray-200 rounded-lg bg-white"
-        style={{ height: '600px' }}
+        className="w-full h-full border border-gray-200 dark:border-gray-600 rounded-lg"
+        style={{ height: '600px', backgroundColor: isDark ? '#1f2937' : '#ffffff' }}
       />
       {selectedNode && (
-        <div className="absolute top-4 right-4 bg-white border border-gray-200 rounded-lg p-4 shadow-lg max-w-xs">
+        <div className="absolute top-4 right-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg p-4 shadow-lg max-w-xs">
           <div className="flex justify-between items-start mb-2">
-            <h3 className="font-semibold text-lg">{selectedNode.label}</h3>
+            <h3 className="font-semibold text-lg text-gray-900 dark:text-white">{selectedNode.label}</h3>
             <button
               onClick={() => setSelectedNode(null)}
-              className="text-gray-400 hover:text-gray-600"
+              className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
             >
               ✕
             </button>
           </div>
-          <div className="text-sm text-gray-600">
+          <div className="text-sm text-gray-600 dark:text-gray-300">
             <p><span className="font-medium">Type:</span> {selectedNode.type}</p>
             <p><span className="font-medium">ID:</span> {selectedNode.id}</p>
             {selectedNode.properties && Object.entries(selectedNode.properties).map(([key, value]) => (
@@ -208,9 +214,9 @@ const NetworkTopology: React.FC<NetworkTopologyProps> = ({ data, isLoading, erro
           </div>
         </div>
       )}
-      <div className="absolute bottom-4 left-4 bg-white border border-gray-200 rounded-lg p-3 shadow-sm">
-        <h4 className="font-medium text-sm mb-2">Legend</h4>
-        <div className="flex gap-4 text-xs">
+      <div className="absolute bottom-4 left-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg p-3 shadow-sm">
+        <h4 className="font-medium text-sm mb-2 text-gray-900 dark:text-white">Legend</h4>
+        <div className="flex gap-4 text-xs text-gray-600 dark:text-gray-300">
           <div className="flex items-center gap-1">
             <span className="w-3 h-3 rounded-full bg-green-500"></span>
             <span>Validator</span>
