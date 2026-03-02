@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -44,7 +46,7 @@ func (r *Reader) GetDashboardSummary(ctx context.Context) (*DashboardSummary, er
 
 	totalValidators := 0
 	activeValidators := 0
-	totalSlots := 0
+	uniqueSlots := make(map[string]bool)
 
 	for _, tally := range tallyFiles {
 		if tally.TotalValidators > 0 {
@@ -53,8 +55,11 @@ func (r *Reader) GetDashboardSummary(ctx context.Context) (*DashboardSummary, er
 		if tally.EligibleNodesCount > 0 {
 			activeValidators = max(activeValidators, tally.EligibleNodesCount)
 		}
-		totalSlots += len(tally.SubmissionCounts)
+		for slotID := range tally.SubmissionCounts {
+			uniqueSlots[slotID] = true
+		}
 	}
+	totalSlots := len(uniqueSlots)
 
 	return &DashboardSummary{
 		TotalEpochs:      len(tallyFiles),
@@ -66,8 +71,9 @@ func (r *Reader) GetDashboardSummary(ctx context.Context) (*DashboardSummary, er
 }
 
 // GetNetworkTopology returns the network topology data (PRIORITY)
+// Uses only the most recent epochs to avoid slow response and client timeouts (broken pipe)
 func (r *Reader) GetNetworkTopology(ctx context.Context) (*NetworkTopology, error) {
-	tallyFiles, err := r.getTallyFiles()
+	tallyFiles, err := r.getRecentTallyFiles(30)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get tally files: %w", err)
 	}
@@ -477,15 +483,51 @@ type TallyDump struct {
 
 // getTallyFiles reads all tally dump files
 func (r *Reader) getTallyFiles() ([]*TallyDump, error) {
+	return r.getTallyFilesWithLimit(0)
+}
+
+// getRecentTallyFiles reads the N most recent tally files (by epoch ID descending)
+// limit 0 means no limit (all files). Used by topology to avoid processing 1000+ files.
+func (r *Reader) getRecentTallyFiles(limit int) ([]*TallyDump, error) {
+	return r.getTallyFilesWithLimit(limit)
+}
+
+func (r *Reader) getTallyFilesWithLimit(limit int) ([]*TallyDump, error) {
 	entries, err := filepath.Glob(filepath.Join(r.dumpDir, "epoch_*.json"))
 	if err != nil {
 		return nil, fmt.Errorf("failed to glob tally files: %w", err)
 	}
 
-	tallies := make([]*TallyDump, 0, len(entries))
-
+	// Parse epoch IDs from filenames and sort descending (newest first)
+	type pathEpoch struct {
+		path  string
+		epoch uint64
+	}
+	pathEpochs := make([]pathEpoch, 0, len(entries))
 	for _, entry := range entries {
-		data, err := os.ReadFile(entry)
+		base := filepath.Base(entry)
+		// Format: epoch_24569676_4198bf81b55ee4af6f9ddc176f8021960813f641.json
+		if strings.HasPrefix(base, "epoch_") && strings.HasSuffix(base, ".json") {
+			mid := base[6 : len(base)-5] // strip "epoch_" and ".json"
+			parts := strings.SplitN(mid, "_", 2)
+			if len(parts) >= 1 {
+				if epoch, err := strconv.ParseUint(parts[0], 10, 64); err == nil {
+					pathEpochs = append(pathEpochs, pathEpoch{entry, epoch})
+				}
+			}
+		}
+	}
+	sort.Slice(pathEpochs, func(i, j int) bool {
+		return pathEpochs[i].epoch > pathEpochs[j].epoch
+	})
+
+	if limit > 0 && len(pathEpochs) > limit {
+		pathEpochs = pathEpochs[:limit]
+	}
+
+	tallies := make([]*TallyDump, 0, len(pathEpochs))
+	for _, pe := range pathEpochs {
+		data, err := os.ReadFile(pe.path)
 		if err != nil {
 			continue
 		}
