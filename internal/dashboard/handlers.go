@@ -41,9 +41,6 @@ func (s *Server) setupRoutes() {
 	// Dashboard summary
 	api.HandleFunc("/dashboard/summary", s.handleDashboardSummary).Methods(http.MethodGet)
 
-	// Network topology (PRIORITY)
-	api.HandleFunc("/network/topology", s.handleNetworkTopology).Methods(http.MethodGet)
-
 	// Epochs
 	api.HandleFunc("/epochs", s.handleEpochs).Methods(http.MethodGet)
 	api.HandleFunc("/epochs/{epochID}", s.handleEpochDetail).Methods(http.MethodGet)
@@ -86,18 +83,6 @@ func (s *Server) handleDashboardSummary(w http.ResponseWriter, r *http.Request) 
 	}
 
 	writeJSON(w, http.StatusOK, summary)
-}
-
-// handleNetworkTopology handles the network topology endpoint (PRIORITY)
-func (s *Server) handleNetworkTopology(w http.ResponseWriter, r *http.Request) {
-	topology, err := s.reader.GetNetworkTopology(r.Context())
-	if err != nil {
-		log.Printf("Error getting network topology: %v", err)
-		writeError(w, http.StatusInternalServerError, "failed to get network topology")
-		return
-	}
-
-	writeJSON(w, http.StatusOK, topology)
 }
 
 // handleEpochs handles the epochs list endpoint

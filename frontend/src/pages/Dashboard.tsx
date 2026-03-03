@@ -1,13 +1,15 @@
 import { useState } from 'react';
-import { useDashboardSummary, useNetworkTopology } from '../hooks/useDashboardData';
+import { useDashboardSummary } from '../hooks/useDashboardData';
 import { useTheme } from '../contexts/ThemeContext';
-import NetworkTopology from '../components/NetworkTopology';
+import PipelineDiagram from '../components/PipelineDiagram';
+import EpochCharts from '../components/EpochCharts';
+import EpochActivityTable from '../components/EpochActivityTable';
+import EpochDetailView from '../components/EpochDetailView';
 
 const Dashboard = () => {
   const { data: summary, isLoading: summaryLoading, error: summaryError } = useDashboardSummary();
-  const { data: topology, isLoading: topologyLoading, error: topologyError } = useNetworkTopology();
-  const { theme, toggleTheme } = useTheme();
-  const [showTopologyHelp, setShowTopologyHelp] = useState(false);
+  const { toggleTheme, theme } = useTheme();
+  const [selectedEpochId, setSelectedEpochId] = useState<number | null>(null);
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors">
@@ -27,10 +29,10 @@ const Dashboard = () => {
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
+      <main className="max-w-7xl mx-auto px-4 py-6 sm:px-6 lg:px-8 space-y-6">
         {/* Summary Cards */}
         {!summaryError && (
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 transition-colors">
               <div className="text-sm font-medium text-gray-500 dark:text-gray-400">Total Epochs</div>
               <div className="mt-2 text-3xl font-semibold text-gray-900 dark:text-white">
@@ -38,17 +40,22 @@ const Dashboard = () => {
               </div>
             </div>
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 transition-colors">
-              <div className="text-sm font-medium text-gray-500 dark:text-gray-400">Total Validators</div>
+              <div className="text-sm font-medium text-gray-500 dark:text-gray-400 flex items-center gap-1">
+                DSV Validators
+                <span title="Validators that produced L1 batches" className="cursor-help text-gray-400 dark:text-gray-500">ⓘ</span>
+              </div>
               <div className="mt-2 text-3xl font-semibold text-green-600 dark:text-green-400">
                 {summaryLoading ? '...' : summary?.total_validators || 0}
               </div>
             </div>
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 transition-colors">
-              <div className="text-sm font-medium text-gray-500 dark:text-gray-400">Active Slots</div>
+              <div className="text-sm font-medium text-gray-500 dark:text-gray-400 flex items-center gap-1">
+                Unique Slots
+                <span title="Snapshotter (lite) nodes that have contributed to consensus" className="cursor-help text-gray-400 dark:text-gray-500">ⓘ</span>
+              </div>
               <div className="mt-2 text-3xl font-semibold text-blue-600 dark:text-blue-400">
                 {summaryLoading ? '...' : summary?.total_slots || 0}
               </div>
-              <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">Unique snapshotter nodes</p>
             </div>
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 transition-colors">
               <div className="text-sm font-medium text-gray-500 dark:text-gray-400">Current Day</div>
@@ -59,36 +66,37 @@ const Dashboard = () => {
           </div>
         )}
 
-        {/* Network Topology */}
+        {/* Pipeline Diagram (collapsible) */}
+        <PipelineDiagram />
+
+        {/* Epoch Charts */}
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 transition-colors">
+          <h2 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Slots & Projects per Epoch</h2>
+          <EpochCharts />
+        </div>
+
+        {/* Epoch Activity Table */}
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow transition-colors">
           <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <h2 className="text-lg font-medium text-gray-900 dark:text-white">Network Topology</h2>
-                <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                  Who submits data to what — snapshotter slots, data projects, and validators (last 30 epochs)
-                </p>
-              </div>
-              <button
-                onClick={() => setShowTopologyHelp(!showTopologyHelp)}
-                className="text-sm text-blue-600 dark:text-blue-400 hover:underline shrink-0"
-              >
-                {showTopologyHelp ? 'Hide' : 'What does this show?'}
-              </button>
-            </div>
-            {showTopologyHelp && (
-              <div className="mt-4 p-4 rounded-lg bg-gray-50 dark:bg-gray-700/50 text-sm text-gray-600 dark:text-gray-300 space-y-2">
-                <p><strong className="text-green-600 dark:text-green-400">Validators</strong> — Aggregate batches from snapshotter submissions and reach consensus on winning CIDs.</p>
-                <p><strong className="text-blue-500 dark:text-blue-400">Slots</strong> — Snapshotter nodes (unique IDs). Each slot submits snapshots to one or more projects.</p>
-                <p><strong className="text-amber-500 dark:text-amber-400">Projects</strong> — Data types (e.g. baseSnapshot, activePools, metadata). Slots submit to projects; validators validate them.</p>
-                <p className="text-gray-500 dark:text-gray-400">Lines show: green = validator validates project, blue = slot submits to project. Drag nodes to rearrange; scroll to zoom.</p>
-              </div>
-            )}
+            <h2 className="text-lg font-medium text-gray-900 dark:text-white">Epoch Activity</h2>
+            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+              Click a row to view epoch detail
+            </p>
           </div>
           <div className="p-6">
-            <NetworkTopology data={topology} isLoading={topologyLoading} error={topologyError} />
+            <EpochActivityTable
+              selectedEpochId={selectedEpochId}
+              onSelectEpoch={setSelectedEpochId}
+            />
           </div>
         </div>
+
+        {/* Epoch Detail */}
+        {selectedEpochId && (
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 transition-colors">
+            <EpochDetailView epochId={selectedEpochId} />
+          </div>
+        )}
       </main>
     </div>
   );

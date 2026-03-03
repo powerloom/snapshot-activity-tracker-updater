@@ -1,7 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import {
   getDashboardSummary,
-  getNetworkTopology,
   getEpochs,
   getEpochDetail,
   getValidators,
@@ -16,7 +15,6 @@ import {
 export const queryKeys = {
   health: ['health'] as const,
   summary: ['summary'] as const,
-  topology: ['topology'] as const,
   epochs: ['epochs'] as const,
   epoch: (id: number) => ['epochs', id] as const,
   validators: ['validators'] as const,
@@ -32,15 +30,6 @@ export const useDashboardSummary = () => {
   return useQuery({
     queryKey: queryKeys.summary,
     queryFn: getDashboardSummary,
-    refetchInterval: 30000, // Refetch every 30 seconds
-  });
-};
-
-// Network topology (PRIORITY)
-export const useNetworkTopology = () => {
-  return useQuery({
-    queryKey: queryKeys.topology,
-    queryFn: getNetworkTopology,
     refetchInterval: 30000, // Refetch every 30 seconds
   });
 };

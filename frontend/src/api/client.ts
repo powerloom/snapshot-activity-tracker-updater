@@ -2,7 +2,6 @@ import axios from 'axios';
 import type {
   HealthResponse,
   DashboardSummary,
-  NetworkTopology,
   EpochsList,
   EpochDetail,
   ValidatorsList,
@@ -31,12 +30,6 @@ export const getHealth = async (): Promise<HealthResponse> => {
 // Dashboard summary
 export const getDashboardSummary = async (): Promise<DashboardSummary> => {
   const response = await apiClient.get<DashboardSummary>('/dashboard/summary');
-  return response.data;
-};
-
-// Network topology (PRIORITY)
-export const getNetworkTopology = async (): Promise<NetworkTopology> => {
-  const response = await apiClient.get<NetworkTopology>('/network/topology');
   return response.data;
 };
 
