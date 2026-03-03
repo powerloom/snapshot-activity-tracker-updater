@@ -48,7 +48,17 @@ const EpochCharts: React.FC = () => {
       <div className="h-64">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={chartData} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
-            <CartesianGrid strokeDasharray="3 3" className="stroke-gray-200 dark:stroke-gray-700" />
+            <defs>
+              <linearGradient id="slotsGradient" x1="0" y1="0" x2="1" y2="0">
+                <stop offset="0%" stopColor="#22d3ee" />
+                <stop offset="100%" stopColor="#3b82f6" />
+              </linearGradient>
+              <linearGradient id="projectsGradient" x1="0" y1="0" x2="1" y2="0">
+                <stop offset="0%" stopColor="#34d399" />
+                <stop offset="100%" stopColor="#e879f9" />
+              </linearGradient>
+            </defs>
+            <CartesianGrid strokeDasharray="3 3" className="stroke-gray-200 dark:stroke-gray-700" strokeOpacity={0.5} />
             <XAxis
               dataKey="label"
               tick={{ fontSize: 11, fill: 'currentColor' }}
@@ -72,16 +82,16 @@ const EpochCharts: React.FC = () => {
               type="monotone"
               dataKey="slots"
               name="Slots"
-              stroke="#3b82f6"
-              strokeWidth={2}
+              stroke="url(#slotsGradient)"
+              strokeWidth={2.5}
               dot={false}
             />
             <Line
               type="monotone"
               dataKey="projects"
               name="Projects"
-              stroke="#10b981"
-              strokeWidth={2}
+              stroke="url(#projectsGradient)"
+              strokeWidth={2.5}
               dot={false}
             />
           </LineChart>

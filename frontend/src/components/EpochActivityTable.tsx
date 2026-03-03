@@ -55,9 +55,6 @@ const EpochActivityTable: React.FC<EpochActivityTableProps> = ({ selectedEpochId
               Timestamp
             </th>
             <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-              Validators
-            </th>
-            <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
               Slots
             </th>
             <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
@@ -76,8 +73,8 @@ const EpochActivityTable: React.FC<EpochActivityTableProps> = ({ selectedEpochId
               className={`
                 cursor-pointer transition-colors
                 ${selectedEpochId === epoch.epoch_id
-                  ? 'bg-blue-50 dark:bg-blue-900/20'
-                  : 'hover:bg-gray-50 dark:hover:bg-gray-700/50'}
+                  ? 'bg-gradient-to-r from-cyan-500/10 to-blue-500/10 dark:from-cyan-500/20 dark:to-blue-500/20'
+                  : 'hover:bg-cyan-500/5 dark:hover:bg-cyan-500/10'}
               `}
             >
               <td className="px-4 py-3 text-sm font-medium text-gray-900 dark:text-white">
@@ -85,9 +82,6 @@ const EpochActivityTable: React.FC<EpochActivityTableProps> = ({ selectedEpochId
               </td>
               <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">
                 {formatTimestamp(epoch.timestamp)}
-              </td>
-              <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300 text-right">
-                {epoch.total_validators}
               </td>
               <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300 text-right">
                 {epoch.slot_count}

@@ -80,7 +80,7 @@ func main() {
 	log.Printf("Dashboard API server listening on :%s", *port)
 	log.Printf("Dashboard UI available at http://localhost:%s", *port)
 	log.Printf("API health check at http://localhost:%s/api/health", *port)
-	log.Printf("Network topology at http://localhost:%s/api/network/topology", *port)
+	log.Printf("Dashboard API at http://localhost:%s/api/dashboard/summary", *port)
 
 	// Wait for shutdown signal or server error
 	select {

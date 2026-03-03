@@ -11,10 +11,20 @@
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+
+  /* Retrowave palette */
+  --gradient-cyan: #00f5ff;
+  --gradient-magenta: #ff00ff;
+  --gradient-purple: #8b5cf6;
+  --gradient-blue: #3b82f6;
 }
 
 .dark {
   color-scheme: dark;
+  --gradient-cyan: #22d3ee;
+  --gradient-magenta: #e879f9;
+  --gradient-purple: #a78bfa;
+  --gradient-blue: #60a5fa;
 }
 
 body {

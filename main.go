@@ -517,6 +517,10 @@ func main() {
 					log.Printf("⚠️  Could not fetch current day for epoch %d: %v", epochID, err)
 				} else {
 					currentDay = day.String()
+					// Persist to Redis for dashboard API
+					if redis.RedisClient != nil {
+						_ = redis.Set(callCtx, redis.CurrentDayKey(dataMarket), currentDay)
+					}
 					// Compare with last fetched day to detect changes
 					lastDay, exists := lastFetchedDay[dataMarket]
 					if !exists {
@@ -741,6 +745,10 @@ func main() {
 								log.Printf("⚠️  Could not fetch current day for epoch %d (EpochReleased): %v", epochID, err)
 							} else {
 								currentDay := day.String()
+								// Persist to Redis for dashboard API
+								if redis.RedisClient != nil {
+									_ = redis.Set(callCtx, redis.CurrentDayKey(dataMarket), currentDay)
+								}
 								// Update last fetched day tracker
 								lastDay, exists := lastFetchedDay[dataMarket]
 								if !exists {
