@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useDashboardSummary } from '../hooks/useDashboardData';
 import { useTheme } from '../contexts/ThemeContext';
 import PipelineDiagram from '../components/PipelineDiagram';
@@ -10,6 +10,13 @@ const Dashboard = () => {
   const { data: summary, isLoading: summaryLoading, error: summaryError } = useDashboardSummary();
   const { toggleTheme, theme } = useTheme();
   const [selectedEpochId, setSelectedEpochId] = useState<number | null>(null);
+  const detailRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (selectedEpochId && detailRef.current) {
+      detailRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+  }, [selectedEpochId]);
 
   return (
     <div className="min-h-screen futuristic-bg bg-gradient-to-br from-slate-50 via-cyan-50/20 to-slate-100 dark:from-gray-950 dark:via-slate-900 dark:to-cyan-950/30 transition-colors">
@@ -103,7 +110,7 @@ const Dashboard = () => {
 
         {/* Epoch Detail */}
         {selectedEpochId && (
-          <div className="futuristic-card rounded-xl p-6">
+          <div ref={detailRef} className="futuristic-card rounded-xl p-6">
             <EpochDetailView epochId={selectedEpochId} />
           </div>
         )}

@@ -20,7 +20,8 @@ const EpochCharts: React.FC = () => {
   const { data, isLoading, error } = useEpochs();
   const epochs = data?.epochs ?? [];
 
-  const chartData = [...epochs].reverse().map((e: EpochSummary) => ({
+  // API returns oldest first; keep that order so earliest is on the left
+  const chartData = epochs.map((e: EpochSummary) => ({
     epoch: e.epoch_id,
     label: formatEpochLabel(e.timestamp),
     slots: e.slot_count,
