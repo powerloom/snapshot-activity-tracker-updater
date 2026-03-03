@@ -631,10 +631,25 @@ func main() {
 				}
 			} else {
 				// Periodic update - send accumulated counts for the current day (not per-epoch counts)
+				// Must include slots from ALL epochs during the day, not just the current epoch.
+				// Slots are accumulated in Redis via UpdateEligibleCountsForDay when each epoch's
+				// window closes. If P2P only delivers batches for the current epoch, Redis will only
+				// have current epoch's slots - consider extending AGGREGATION_WINDOW_SECONDS or
+				// ensuring batches for older epochs are received.
 				if currentDay != "" {
-					// Get accumulated counts for the current day from Redis
+					// Get accumulated counts for the current day from Redis (slots from all processed epochs)
 					accumulatedDayCounts := submissionCounter.GetCountsForDay(dataMarket, currentDay)
+					redisSlotCount := len(accumulatedDayCounts)
+					// Defensive merge: add slots from current epoch that may be missing (e.g. race
+					// where read happened before Redis write). Only add if slot not already present.
+					for slotID, count := range slotCounts {
+						if count > 0 && accumulatedDayCounts[slotID] == 0 {
+							accumulatedDayCounts[slotID] = count
+						}
+					}
 					if len(accumulatedDayCounts) > 0 {
+						log.Printf("📊 Periodic update: %d slots total (Redis had %d, current epoch contributed %d unique)",
+							len(accumulatedDayCounts), redisSlotCount, len(slotCounts))
 						if err := contractUpdater.UpdateSubmissionCounts(callCtx, epochID, dataMarket, accumulatedDayCounts, 0); err != nil {
 							log.Printf("❌ Error updating contract for data market %s: %v", dataMarket, err)
 						}
