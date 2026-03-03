@@ -58,7 +58,7 @@ const EpochCharts: React.FC = () => {
                 <stop offset="100%" stopColor="#e879f9" />
               </linearGradient>
             </defs>
-            <CartesianGrid strokeDasharray="3 3" className="stroke-gray-200 dark:stroke-gray-700" strokeOpacity={0.5} />
+            <CartesianGrid strokeDasharray="3 3" className="stroke-cyan-500/20 dark:stroke-cyan-400/20" strokeOpacity={0.6} />
             <XAxis
               dataKey="label"
               tick={{ fontSize: 11, fill: 'currentColor' }}

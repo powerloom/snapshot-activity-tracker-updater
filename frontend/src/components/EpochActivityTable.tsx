@@ -45,27 +45,27 @@ const EpochActivityTable: React.FC<EpochActivityTableProps> = ({ selectedEpochId
 
   return (
     <div className="overflow-x-auto">
-      <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+      <table className="min-w-full divide-y divide-cyan-500/10 dark:divide-cyan-400/10">
         <thead>
           <tr>
-            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+            <th className="px-4 py-3 text-left font-mono text-xs font-medium text-cyan-600 dark:text-cyan-400 uppercase tracking-wider">
               Epoch ID
             </th>
-            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+            <th className="px-4 py-3 text-left font-mono text-xs font-medium text-cyan-600 dark:text-cyan-400 uppercase tracking-wider">
               Timestamp
             </th>
-            <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+            <th className="px-4 py-3 text-right font-mono text-xs font-medium text-cyan-600 dark:text-cyan-400 uppercase tracking-wider">
               Slots
             </th>
-            <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+            <th className="px-4 py-3 text-right font-mono text-xs font-medium text-cyan-600 dark:text-cyan-400 uppercase tracking-wider">
               Projects
             </th>
-            <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+            <th className="px-4 py-3 text-right font-mono text-xs font-medium text-cyan-600 dark:text-cyan-400 uppercase tracking-wider">
               Eligible Nodes
             </th>
           </tr>
         </thead>
-        <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+        <tbody className="divide-y divide-cyan-500/10 dark:divide-cyan-400/10">
           {displayEpochs.map((epoch: EpochSummary) => (
             <tr
               key={epoch.epoch_id}
@@ -73,11 +73,11 @@ const EpochActivityTable: React.FC<EpochActivityTableProps> = ({ selectedEpochId
               className={`
                 cursor-pointer transition-colors
                 ${selectedEpochId === epoch.epoch_id
-                  ? 'bg-gradient-to-r from-cyan-500/10 to-blue-500/10 dark:from-cyan-500/20 dark:to-blue-500/20'
+                  ? 'bg-cyan-500/15 dark:bg-cyan-500/25 border-l-2 border-cyan-400'
                   : 'hover:bg-cyan-500/5 dark:hover:bg-cyan-500/10'}
               `}
             >
-              <td className="px-4 py-3 text-sm font-medium text-gray-900 dark:text-white">
+              <td className="px-4 py-3 font-mono text-sm font-medium text-gray-900 dark:text-white">
                 {epoch.epoch_id}
               </td>
               <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">

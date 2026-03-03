@@ -4,12 +4,13 @@ const PipelineDiagram: React.FC = () => {
   const [isExpanded, setIsExpanded] = useState(false);
 
   return (
-    <div className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm rounded-lg shadow-sm transition-colors border border-cyan-500/10 dark:border-cyan-400/10 bg-gradient-to-br from-white to-cyan-50/30 dark:from-gray-800 dark:to-cyan-950/20">
+    <div className="futuristic-card rounded-xl overflow-hidden">
       <button
         onClick={() => setIsExpanded(!isExpanded)}
-        className="w-full px-6 py-4 flex items-center justify-between text-left hover:bg-gray-50 dark:hover:bg-gray-700/50 rounded-lg transition-colors"
+        className="w-full px-6 py-4 flex items-center justify-between text-left hover:bg-cyan-500/5 dark:hover:bg-cyan-500/10 rounded-lg transition-all duration-300"
       >
-        <h2 className="text-lg font-medium text-gray-900 dark:text-white">
+        <h2 className="font-orbitron text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+          <span className="w-1 h-5 bg-gradient-to-b from-cyan-400 to-fuchsia-500 rounded-full" />
           How DSV works
         </h2>
         <span className="text-gray-500 dark:text-gray-400">

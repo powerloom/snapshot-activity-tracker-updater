@@ -42,18 +42,18 @@ const EpochDetailView: React.FC<EpochDetailViewProps> = ({ epochId }) => {
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
+        <h3 className="font-orbitron text-lg font-semibold text-gray-900 dark:text-white mb-2">
           Epoch {data.epoch_id} — {new Date(data.timestamp * 1000).toLocaleString()}
         </h3>
-        <p className="text-sm text-gray-500 dark:text-gray-400">
+        <p className="font-mono text-sm text-gray-500 dark:text-gray-400">
           {data.total_validators} validators · {data.eligible_nodes_count} eligible nodes
         </p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Slots table */}
-        <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4">
-          <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+        <div className="bg-cyan-500/5 dark:bg-cyan-500/10 rounded-lg p-4 border border-cyan-500/10 dark:border-cyan-400/10">
+          <h4 className="font-mono text-xs uppercase tracking-wider text-cyan-600 dark:text-cyan-400 mb-3">
             Slots (Submission Count)
           </h4>
           <div className="overflow-x-auto max-h-64 overflow-y-auto">
@@ -81,8 +81,8 @@ const EpochDetailView: React.FC<EpochDetailViewProps> = ({ epochId }) => {
         </div>
 
         {/* Projects table */}
-        <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4">
-          <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+        <div className="bg-cyan-500/5 dark:bg-cyan-500/10 rounded-lg p-4 border border-cyan-500/10 dark:border-cyan-400/10">
+          <h4 className="font-mono text-xs uppercase tracking-wider text-cyan-600 dark:text-cyan-400 mb-3">
             Projects (Winning CID)
           </h4>
           <div className="overflow-x-auto max-h-64 overflow-y-auto">
@@ -104,7 +104,7 @@ const EpochDetailView: React.FC<EpochDetailViewProps> = ({ epochId }) => {
                         href={`${IPFS_GATEWAY}${cid}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="font-mono text-blue-600 dark:text-blue-400 hover:underline"
+                        className="font-mono text-cyan-600 dark:text-cyan-400 hover:text-cyan-500 dark:hover:text-cyan-300 hover:underline"
                       >
                         {truncateCid(cid)}
                       </a>
@@ -117,8 +117,8 @@ const EpochDetailView: React.FC<EpochDetailViewProps> = ({ epochId }) => {
         </div>
 
         {/* Validators table */}
-        <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4">
-          <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+        <div className="bg-cyan-500/5 dark:bg-cyan-500/10 rounded-lg p-4 border border-cyan-500/10 dark:border-cyan-400/10">
+          <h4 className="font-mono text-xs uppercase tracking-wider text-cyan-600 dark:text-cyan-400 mb-3">
             Validators (Batch CID)
           </h4>
           <div className="overflow-x-auto max-h-64 overflow-y-auto">
@@ -140,7 +140,7 @@ const EpochDetailView: React.FC<EpochDetailViewProps> = ({ epochId }) => {
                         href={`${IPFS_GATEWAY}${v.batch_cid}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="font-mono text-blue-600 dark:text-blue-400 hover:underline"
+                        className="font-mono text-cyan-600 dark:text-cyan-400 hover:text-cyan-500 dark:hover:text-cyan-300 hover:underline"
                       >
                         {truncateCid(v.batch_cid)}
                       </a>
