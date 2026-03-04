@@ -6,28 +6,33 @@
   font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
   font-weight: 400;
-
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 
-  --gradient-cyan: #00f5ff;
-  --gradient-magenta: #ff00ff;
-  --gradient-purple: #8b5cf6;
-  --gradient-blue: #3b82f6;
+  /* PowerLoom / Snapshotter Dashboard v2 palette */
+  --pl-bg: #161818;
+  --pl-bg-card: #151818;
+  --pl-bg-nav: #141717;
+  --pl-bg-elevated: #1a1d1e;
+  --pl-bg-input: #1b1d1e;
+  --pl-text: #fff;
+  --pl-text-muted: #b4ccc5;
+  --pl-accent: #54e794;
+  --pl-border: #384949;
+  --pl-border-subtle: #303131;
 }
 
-.dark {
-  color-scheme: dark;
-  --gradient-cyan: #22d3ee;
-  --gradient-magenta: #e879f9;
-  --gradient-purple: #a78bfa;
-  --gradient-blue: #60a5fa;
+html,
+body {
+  margin: 0;
+  padding: 0;
+  background-color: var(--pl-bg);
+  color: var(--pl-text);
 }
 
 body {
-  margin: 0;
   display: flex;
   place-items: center;
   min-width: 320px;
@@ -38,99 +43,19 @@ body {
   width: 100%;
 }
 
-/* Futuristic grid background */
-.futuristic-bg {
+/* PowerLoom card - dark panel matching snapshotter-dashboard-v2 */
+.pl-card {
   position: relative;
-  overflow: hidden;
+  background-color: var(--pl-bg-card);
+  border: 2px solid var(--pl-border);
+  border-radius: 1rem;
+  transition: border-color 0.2s ease;
 }
 
-.futuristic-bg::before {
-  content: '';
-  position: fixed;
-  inset: 0;
-  background-image:
-    linear-gradient(rgba(34, 211, 238, 0.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(34, 211, 238, 0.03) 1px, transparent 1px);
-  background-size: 60px 60px;
-  pointer-events: none;
-  z-index: 0;
+.pl-card:hover {
+  border-color: #4a5a5a;
 }
 
-.dark .futuristic-bg::before {
-  background-image:
-    linear-gradient(rgba(34, 211, 238, 0.06) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(34, 211, 238, 0.06) 1px, transparent 1px);
-}
-
-/* Futuristic card */
-.futuristic-card {
-  position: relative;
-  background: linear-gradient(135deg, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0.85) 100%);
-  backdrop-filter: blur(16px);
-  border: 1px solid rgba(34, 211, 238, 0.2);
-  box-shadow:
-    0 4px 6px -1px rgba(0, 0, 0, 0.08),
-    0 10px 25px -5px rgba(0, 0, 0, 0.08),
-    0 0 0 1px rgba(255, 255, 255, 0.5) inset,
-    0 0 30px rgba(34, 211, 238, 0.08);
-  transition: all 0.3s ease;
-}
-
-.futuristic-card:hover {
-  border-color: rgba(34, 211, 238, 0.4);
-  box-shadow:
-    0 20px 40px -10px rgba(0, 0, 0, 0.12),
-    0 0 0 1px rgba(255, 255, 255, 0.6) inset,
-    0 0 40px rgba(34, 211, 238, 0.15),
-    0 0 80px rgba(34, 211, 238, 0.05);
-}
-
-.dark .futuristic-card {
-  background: linear-gradient(135deg, rgba(31, 41, 55, 0.95) 0%, rgba(17, 24, 39, 0.9) 100%);
-  border: 1px solid rgba(34, 211, 238, 0.25);
-  box-shadow:
-    0 4px 6px -1px rgba(0, 0, 0, 0.3),
-    0 10px 25px -5px rgba(0, 0, 0, 0.4),
-    0 0 0 1px rgba(255, 255, 255, 0.03) inset,
-    0 0 40px rgba(34, 211, 238, 0.1);
-}
-
-.dark .futuristic-card:hover {
-  border-color: rgba(34, 211, 238, 0.5);
-  box-shadow:
-    0 20px 40px -10px rgba(0, 0, 0, 0.5),
-    0 0 0 1px rgba(255, 255, 255, 0.05) inset,
-    0 0 50px rgba(34, 211, 238, 0.2),
-    0 0 100px rgba(34, 211, 238, 0.08);
-}
-
-/* Neon text */
-.neon-text {
-  text-shadow: 0 0 10px rgba(34, 211, 238, 0.5), 0 0 20px rgba(34, 211, 238, 0.3);
-}
-
-/* Scanline overlay */
-.futuristic-bg::after {
-  content: '';
-  position: fixed;
-  inset: 0;
-  background: repeating-linear-gradient(
-    0deg,
-    transparent,
-    transparent 2px,
-    rgba(0, 0, 0, 0.02) 2px,
-    rgba(0, 0, 0, 0.02) 4px
-  );
-  pointer-events: none;
-  z-index: 1;
-}
-
-.dark .futuristic-bg::after {
-  background: repeating-linear-gradient(
-    0deg,
-    transparent,
-    transparent 2px,
-    rgba(0, 0, 0, 0.08) 2px,
-    rgba(0, 0, 0, 0.08) 4px
-  );
+.pl-card-elevated {
+  background-color: var(--pl-bg-elevated);
 }

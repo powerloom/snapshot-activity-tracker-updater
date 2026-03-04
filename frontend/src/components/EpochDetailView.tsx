@@ -18,14 +18,14 @@ const EpochDetailView: React.FC<EpochDetailViewProps> = ({ epochId }) => {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-500" />
+        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-pl-accent" />
       </div>
     );
   }
 
   if (error || !data) {
     return (
-      <div className="py-12 text-center text-red-500 dark:text-red-400">
+      <div className="py-12 text-center text-red-400">
         Error loading epoch detail
       </div>
     );
@@ -42,35 +42,35 @@ const EpochDetailView: React.FC<EpochDetailViewProps> = ({ epochId }) => {
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="font-orbitron text-lg font-semibold text-gray-900 dark:text-white mb-2">
+        <h3 className="font-orbitron text-lg font-semibold text-white mb-2">
           Epoch {data.epoch_id} — {new Date(data.timestamp * 1000).toLocaleString()}
         </h3>
-        <p className="font-mono text-sm text-gray-500 dark:text-gray-400">
+        <p className="font-mono text-sm text-pl-text-muted">
           {data.total_validators} validators · {data.eligible_nodes_count} eligible nodes
         </p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Slots table */}
-        <div className="bg-cyan-500/5 dark:bg-cyan-500/10 rounded-lg p-4 border border-cyan-500/10 dark:border-cyan-400/10">
-          <h4 className="font-mono text-xs uppercase tracking-wider text-cyan-600 dark:text-cyan-400 mb-3">
+        <div className="bg-pl-bg-elevated rounded-lg p-4 border-2 border-pl-border">
+          <h4 className="font-mono text-xs uppercase tracking-wider text-pl-text-muted mb-3">
             Slots (Submission Count)
           </h4>
           <div className="overflow-x-auto max-h-64 overflow-y-auto">
             <table className="min-w-full text-sm">
               <thead>
                 <tr>
-                  <th className="text-left py-2 text-gray-500 dark:text-gray-400">Slot ID</th>
-                  <th className="text-right py-2 text-gray-500 dark:text-gray-400">Count</th>
+                  <th className="text-left py-2 text-pl-text-muted">Slot ID</th>
+                  <th className="text-right py-2 text-pl-text-muted">Count</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+              <tbody className="divide-y divide-pl-border-subtle">
                 {slotEntries.map(([slotId, count]) => (
                   <tr key={slotId}>
-                    <td className="py-1.5 font-mono text-gray-900 dark:text-gray-100">
+                    <td className="py-1.5 font-mono text-white">
                       {truncateId(slotId)}
                     </td>
-                    <td className="py-1.5 text-right text-gray-600 dark:text-gray-300">
+                    <td className="py-1.5 text-right text-pl-accent">
                       {count}
                     </td>
                   </tr>
@@ -81,22 +81,22 @@ const EpochDetailView: React.FC<EpochDetailViewProps> = ({ epochId }) => {
         </div>
 
         {/* Projects table */}
-        <div className="bg-cyan-500/5 dark:bg-cyan-500/10 rounded-lg p-4 border border-cyan-500/10 dark:border-cyan-400/10">
-          <h4 className="font-mono text-xs uppercase tracking-wider text-cyan-600 dark:text-cyan-400 mb-3">
+        <div className="bg-pl-bg-elevated rounded-lg p-4 border-2 border-pl-border">
+          <h4 className="font-mono text-xs uppercase tracking-wider text-pl-text-muted mb-3">
             Projects (Winning CID)
           </h4>
           <div className="overflow-x-auto max-h-64 overflow-y-auto">
             <table className="min-w-full text-sm">
               <thead>
                 <tr>
-                  <th className="text-left py-2 text-gray-500 dark:text-gray-400">Project ID</th>
-                  <th className="text-left py-2 text-gray-500 dark:text-gray-400">CID</th>
+                  <th className="text-left py-2 text-pl-text-muted">Project ID</th>
+                  <th className="text-left py-2 text-pl-text-muted">CID</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+              <tbody className="divide-y divide-pl-border-subtle">
                 {projectEntries.map(([projectId, cid]) => (
                   <tr key={projectId}>
-                    <td className="py-1.5 font-mono text-gray-900 dark:text-gray-100">
+                    <td className="py-1.5 font-mono text-white">
                       {truncateId(projectId)}
                     </td>
                     <td className="py-1.5">
@@ -104,7 +104,7 @@ const EpochDetailView: React.FC<EpochDetailViewProps> = ({ epochId }) => {
                         href={`${IPFS_GATEWAY}${cid}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="font-mono text-cyan-600 dark:text-cyan-400 hover:text-cyan-500 dark:hover:text-cyan-300 hover:underline"
+                        className="font-mono text-pl-accent hover:text-pl-accent/80 hover:underline"
                       >
                         {truncateCid(cid)}
                       </a>
@@ -117,22 +117,22 @@ const EpochDetailView: React.FC<EpochDetailViewProps> = ({ epochId }) => {
         </div>
 
         {/* Validators table */}
-        <div className="bg-cyan-500/5 dark:bg-cyan-500/10 rounded-lg p-4 border border-cyan-500/10 dark:border-cyan-400/10">
-          <h4 className="font-mono text-xs uppercase tracking-wider text-cyan-600 dark:text-cyan-400 mb-3">
+        <div className="bg-pl-bg-elevated rounded-lg p-4 border-2 border-pl-border">
+          <h4 className="font-mono text-xs uppercase tracking-wider text-pl-text-muted mb-3">
             Validators (Batch CID)
           </h4>
           <div className="overflow-x-auto max-h-64 overflow-y-auto">
             <table className="min-w-full text-sm">
               <thead>
                 <tr>
-                  <th className="text-left py-2 text-gray-500 dark:text-gray-400">Validator ID</th>
-                  <th className="text-left py-2 text-gray-500 dark:text-gray-400">Batch CID</th>
+                  <th className="text-left py-2 text-pl-text-muted">Validator ID</th>
+                  <th className="text-left py-2 text-pl-text-muted">Batch CID</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+              <tbody className="divide-y divide-pl-border-subtle">
                 {validators.map((v) => (
                   <tr key={v.validator_id}>
-                    <td className="py-1.5 font-mono text-gray-900 dark:text-gray-100">
+                    <td className="py-1.5 font-mono text-white">
                       {truncateId(v.validator_id)}
                     </td>
                     <td className="py-1.5">
@@ -140,7 +140,7 @@ const EpochDetailView: React.FC<EpochDetailViewProps> = ({ epochId }) => {
                         href={`${IPFS_GATEWAY}${v.batch_cid}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="font-mono text-cyan-600 dark:text-cyan-400 hover:text-cyan-500 dark:hover:text-cyan-300 hover:underline"
+                        className="font-mono text-pl-accent hover:text-pl-accent/80 hover:underline"
                       >
                         {truncateCid(v.batch_cid)}
                       </a>
