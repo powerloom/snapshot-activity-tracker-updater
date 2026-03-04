@@ -19,13 +19,16 @@ const Dashboard = () => {
   return (
     <div className="min-h-screen bg-pl-bg">
       <header className="sticky top-0 z-50 bg-pl-bg-nav bg-opacity-95 border-b-2 border-pl-border">
-        <div className="max-w-7xl mx-auto px-4 py-5 sm:px-6 lg:px-8">
-          <h1 className="font-orbitron text-3xl font-bold tracking-tight text-white">
-            DSV Network Activity
-          </h1>
-          <p className="mt-1.5 font-mono text-xs uppercase tracking-widest text-pl-text-muted">
-            Real-time decentralized sequencer validator activity
-          </p>
+        <div className="max-w-7xl mx-auto px-4 py-5 sm:px-6 lg:px-8 flex flex-wrap items-center gap-6">
+          <img src="/logo.png" alt="Powerloom" className="w-[200px] max-md:w-[140px] h-auto" />
+          <div>
+            <h1 className="font-orbitron text-3xl font-bold tracking-tight text-white">
+              BDS Data Market Activity
+            </h1>
+            <p className="mt-1.5 font-mono text-xs uppercase tracking-widest text-pl-text-muted">
+              DSV validators & snapshotters on Powerloom Mainnet
+            </p>
+          </div>
         </div>
       </header>
 
