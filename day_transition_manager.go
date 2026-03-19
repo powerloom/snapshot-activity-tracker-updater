@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -183,6 +184,31 @@ func (dtm *DayTransitionManager) IsBufferEpoch(dataMarket string, currentEpoch u
 
 	log.Printf("❌ IsBufferEpoch: No matching buffer epoch found for epoch %d, dataMarket %s", currentEpoch, dataMarket)
 	return nil, false
+}
+
+// CleanupOldMarkers removes in-memory markers where buffer epoch has passed by more than epochMargin.
+// Call periodically with currentEpoch to prevent unbounded growth. Epochs are ~12s apart; 7200 ≈ 24h.
+func (dtm *DayTransitionManager) CleanupOldMarkers(dataMarket string, currentEpoch uint64, epochMargin uint64) int {
+	dtm.mu.Lock()
+	defer dtm.mu.Unlock()
+
+	cutoff := int64(currentEpoch) - int64(epochMargin)
+	if cutoff <= 0 {
+		return 0
+	}
+
+	removed := 0
+	for key, marker := range dtm.dayTransitionMarkers {
+		if strings.HasPrefix(key, dataMarket+":") && marker.BufferEpoch < cutoff {
+			delete(dtm.dayTransitionMarkers, key)
+			removed++
+		}
+	}
+
+	if removed > 0 {
+		log.Printf("🧹 Cleaned up %d old day transition markers for dataMarket %s", removed, dataMarket)
+	}
+	return removed
 }
 
 // RemoveMarker removes a day transition marker after final update is sent

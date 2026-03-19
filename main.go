@@ -11,6 +11,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"sync/atomic"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -30,6 +31,9 @@ import (
 	contract "p2p-debugger/contract"
 	"p2p-debugger/redis"
 )
+
+// lastSeenEpoch tracks the most recent EpochReleased event for memory cleanup.
+var lastSeenEpoch atomic.Uint64
 
 // P2PSnapshotSubmission represents the data structure for snapshot submissions
 // sent over the P2P network by the collector.
@@ -474,6 +478,9 @@ func main() {
 			dataMarket = configuredDataMarket
 			log.Printf("🔒 Window closed for epoch %d, dataMarket %s - finalizing tally", epochID, dataMarket)
 
+			// Remove epoch from aggregations when callback exits to prevent memory leak
+			defer batchProcessor.RemoveEpoch(epochID)
+
 			// Create a new context with timeout for contract calls (window close callback runs in goroutine)
 			callCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 			defer cancel()
@@ -669,6 +676,35 @@ func main() {
 			return nil
 		})
 
+		// Start periodic memory cleanup to prevent unbounded growth
+		go func() {
+			ticker := time.NewTicker(1 * time.Hour)
+			defer ticker.Stop()
+			for {
+				select {
+				case <-ctx.Done():
+					return
+				case <-ticker.C:
+					if windowManager != nil {
+						windowManager.Cleanup()
+					}
+					if batchProcessor != nil {
+						batchProcessor.PruneStaleEpochs(24 * time.Hour)
+					}
+					if submissionCounter != nil && configuredDataMarket != "" && redis.RedisClient != nil {
+						if currentDay, err := redis.Get(ctx, redis.CurrentDayKey(configuredDataMarket)); err == nil && currentDay != "" {
+							submissionCounter.PruneOldDays(configuredDataMarket, currentDay, 14)
+						}
+					}
+					if dayTransitionManager != nil && configuredDataMarket != "" {
+						if currentEpoch := lastSeenEpoch.Load(); currentEpoch > 7200 {
+							dayTransitionManager.CleanupOldMarkers(configuredDataMarket, currentEpoch, 7200)
+						}
+					}
+				}
+			}
+		}()
+
 		// Initialize event monitor if RPC nodes are provided
 		rpcNodesStr := os.Getenv("POWERLOOM_RPC_NODES")
 		if rpcNodesStr == "" {
@@ -723,6 +759,9 @@ func main() {
 					defer eventMonitor.Close()
 
 					eventMonitor.SetEventCallback(func(event *EpochReleasedEvent) error {
+						epochID := event.EpochID.Uint64()
+						lastSeenEpoch.Store(epochID)
+
 						// Always call window manager first (creates windows for batch processing)
 						if err := windowManager.OnEpochReleased(event); err != nil {
 							return err
@@ -732,7 +771,6 @@ func main() {
 						// even if no batches arrive. This ensures final rewards are processed
 						// even when all nodes are down.
 						if contractClient != nil && dayTransitionManager != nil && contractUpdater != nil && submissionCounter != nil {
-							epochID := event.EpochID.Uint64()
 							dataMarket := configuredDataMarket
 
 							// Create context for contract calls

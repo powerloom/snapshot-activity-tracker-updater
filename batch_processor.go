@@ -239,6 +239,35 @@ func (bp *BatchProcessor) GetEpochAggregation(epochID uint64) *EpochAggregation 
 	return bp.epochAggregations[epochID]
 }
 
+// RemoveEpoch removes an epoch from aggregations after processing is complete.
+// Call after successful aggregation to prevent unbounded memory growth.
+func (bp *BatchProcessor) RemoveEpoch(epochID uint64) {
+	bp.mu.Lock()
+	defer bp.mu.Unlock()
+	delete(bp.epochAggregations, epochID)
+	log.Printf("🧹 Removed epoch %d from aggregations", epochID)
+}
+
+// PruneStaleEpochs removes epochs that have not been updated in over 24 hours.
+// Handles epochs that never received batches or never triggered window close.
+func (bp *BatchProcessor) PruneStaleEpochs(maxAge time.Duration) int {
+	bp.mu.Lock()
+	defer bp.mu.Unlock()
+
+	cutoff := time.Now().Add(-maxAge)
+	removed := 0
+	for epochID, agg := range bp.epochAggregations {
+		if agg.UpdatedAt.Before(cutoff) {
+			delete(bp.epochAggregations, epochID)
+			removed++
+		}
+	}
+	if removed > 0 {
+		log.Printf("🧹 Pruned %d stale epochs (older than %v)", removed, maxAge)
+	}
+	return removed
+}
+
 // ParseValidatorBatchMessage parses a JSON message into a FinalizedBatch
 // The JSON structure matches FinalizedBatch, not ValidatorBatch
 func ParseValidatorBatchMessage(data []byte) (*FinalizedBatch, error) {

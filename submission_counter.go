@@ -455,6 +455,39 @@ func (sc *SubmissionCounter) ResetCounts(dataMarket string) {
 	log.Printf("Reset counts for data market %s", dataMarket)
 }
 
+// PruneOldDays removes in-memory day entries older than keepDays from current day.
+// Day format is numeric string (e.g. "65", "100"). Only evicts days where currentDay - day > keepDays.
+// Does not touch Redis keys (those are source of truth for GetCountsForDay).
+func (sc *SubmissionCounter) PruneOldDays(dataMarket string, currentDay string, keepDays int) int {
+	sc.mu.Lock()
+	defer sc.mu.Unlock()
+
+	currentDayNum, err := strconv.ParseInt(currentDay, 10, 64)
+	if err != nil {
+		return 0
+	}
+
+	cutoff := currentDayNum - int64(keepDays)
+	removed := 0
+	if dayCounts, ok := sc.counts[dataMarket]; ok {
+		for day := range dayCounts {
+			dayNum, err := strconv.ParseInt(day, 10, 64)
+			if err != nil {
+				continue
+			}
+			if dayNum < cutoff {
+				delete(dayCounts, day)
+				removed++
+			}
+		}
+	}
+
+	if removed > 0 {
+		log.Printf("🧹 Pruned %d old days from in-memory cache for dataMarket %s (keepDays=%d)", removed, dataMarket, keepDays)
+	}
+	return removed
+}
+
 // ResetCountsForDay resets counts for a specific day (useful after final update)
 // Clears both in-memory cache and Redis keys for that day
 func (sc *SubmissionCounter) ResetCountsForDay(dataMarket string, day string) {
