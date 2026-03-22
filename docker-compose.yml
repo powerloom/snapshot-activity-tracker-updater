@@ -89,7 +89,6 @@ services:
     build:
       context: ./relayer-py
       dockerfile: Dockerfile
-    container_name: snapshot-activity-tracker-relayer-py
     environment:
       # Core RPC Configuration
       - POWERLOOM_RPC_NODES=${POWERLOOM_RPC_NODES}
