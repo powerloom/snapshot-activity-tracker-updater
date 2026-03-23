@@ -7,18 +7,10 @@ else
     DOCKER_COMPOSE_CMD="docker compose"
 fi
 
-# First, force remove any stuck containers directly (bypasses docker-compose)
-# This handles containers stuck in bad states (e.g., trying to pull non-existent images)
-echo "🧹 Force removing any stuck containers..."
-STUCK_CONTAINERS=$(docker ps -a --filter "name=snapshot-activity-tracker" --format "{{.ID}}" 2>/dev/null || true)
-if [ -n "$STUCK_CONTAINERS" ]; then
-    echo "$STUCK_CONTAINERS" | while read -r container_id; do
-        echo "   Force removing container $container_id..."
-        docker rm -f "$container_id" 2>/dev/null || true
-    done
-fi
-
-# Also get containers from docker-compose and force remove them
+# Force-remove containers for *this* compose project only (docker compose ps is project-scoped).
+# Do NOT use docker ps --filter name=snapshot-activity-tracker — that substring matches every
+# clone on the host (e.g. other mainnet-alpha-watcher directories / stacks).
+echo "🧹 Force removing project containers (if any stuck)..."
 COMPOSE_CONTAINERS=$($DOCKER_COMPOSE_CMD ps -q 2>/dev/null || true)
 if [ -n "$COMPOSE_CONTAINERS" ]; then
     echo "$COMPOSE_CONTAINERS" | while read -r container_id; do
