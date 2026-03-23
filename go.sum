@@ -378,8 +378,8 @@ github.com/polydawn/refmt v0.89.0 h1:ADJTApkvkeBZsN0tBTx8QjpD9JkmxbKp0cxfr9qszm4
 github.com/polydawn/refmt v0.89.0/go.mod h1:/zvteZs/GwLtCgZ4BL6CBsk9IKIlexP43ObX9AxTqTw=
 github.com/powerloom/go-rpc-helper v1.0.5 h1:VMdUQiz1T2mKPotboVphW7MbxcqySyMdiu9ty78Gh8g=
 github.com/powerloom/go-rpc-helper v1.0.5/go.mod h1:pc0m1rfvAwlC/kX3phUAKwoCdlNHHzgyqh4pJUXhIw0=
-github.com/powerloom/snapshot-sequencer-validator v0.0.0-20251118183737-ffc7df9227f8 h1:HFlz2DoIC21kbfOx6mYmgjoisuNqj97/ImkPIddHsOI=
-github.com/powerloom/snapshot-sequencer-validator v0.0.0-20251118183737-ffc7df9227f8/go.mod h1:sP9o92/dhP3FkzkAHfoyfzTElR6K61WyFBCdaEC6jkc=
+github.com/powerloom/snapshot-sequencer-validator v0.0.0-20260323134655-052e28c6fc37 h1:LuxATmrocjEfcay1vll+7E30JPx5IUS1htSriztgU1U=
+github.com/powerloom/snapshot-sequencer-validator v0.0.0-20260323134655-052e28c6fc37/go.mod h1:sP9o92/dhP3FkzkAHfoyfzTElR6K61WyFBCdaEC6jkc=
 github.com/prometheus/client_golang v0.8.0/go.mod h1:7SWBe2y4D6OKWSNQJUaRYU/AaXPKyh/dDVn+NZz0KFw=
 github.com/prometheus/client_golang v1.23.0 h1:ust4zpdl9r4trLY/gSjlm07PuiBq2ynaXXlptpfy8Uc=
 github.com/prometheus/client_golang v1.23.0/go.mod h1:i/o0R9ByOnHX0McrTMTyhYvKE4haaf2mW08I+jGAjEE=
