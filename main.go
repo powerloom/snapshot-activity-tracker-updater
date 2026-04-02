@@ -600,6 +600,8 @@ func main() {
 			}
 			if err := tallyDumper.Dump(callCtx, tallyDump); err != nil {
 				log.Printf("❌ Error generating tally dump: %v", err)
+			} else {
+				maybeSendSlackEpochSummary(callCtx, tallyDump, currentDay)
 			}
 
 			// Check for day transition (using the same currentDay fetched above)
