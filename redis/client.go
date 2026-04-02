@@ -217,3 +217,50 @@ func Unlink(ctx context.Context, keys ...string) (int64, error) {
 	}
 	return RedisClient.Unlink(ctx, keys...).Result()
 }
+
+// ZAdd adds a member to a sorted set with the given score.
+func ZAdd(ctx context.Context, key string, score float64, member string) error {
+	if RedisClient == nil {
+		return errors.New("Redis client not initialized")
+	}
+	return RedisClient.ZAdd(ctx, key, redis.Z{Score: score, Member: member}).Err()
+}
+
+// ZRevRange returns members from a sorted set ordered from high to low score.
+func ZRevRange(ctx context.Context, key string, start, stop int64) ([]string, error) {
+	if RedisClient == nil {
+		return nil, errors.New("Redis client not initialized")
+	}
+	return RedisClient.ZRevRange(ctx, key, start, stop).Result()
+}
+
+// ZRange returns members from a sorted set ordered from low to high score.
+func ZRange(ctx context.Context, key string, start, stop int64) ([]string, error) {
+	if RedisClient == nil {
+		return nil, errors.New("Redis client not initialized")
+	}
+	return RedisClient.ZRange(ctx, key, start, stop).Result()
+}
+
+// ZCard returns the number of members in a sorted set.
+func ZCard(ctx context.Context, key string) (int64, error) {
+	if RedisClient == nil {
+		return 0, errors.New("Redis client not initialized")
+	}
+	return RedisClient.ZCard(ctx, key).Result()
+}
+
+// ZRem removes members from a sorted set.
+func ZRem(ctx context.Context, key string, members ...string) (int64, error) {
+	if RedisClient == nil {
+		return 0, errors.New("Redis client not initialized")
+	}
+	if len(members) == 0 {
+		return 0, nil
+	}
+	args := make([]interface{}, len(members))
+	for i := range members {
+		args[i] = members[i]
+	}
+	return RedisClient.ZRem(ctx, key, args...).Result()
+}

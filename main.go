@@ -29,6 +29,7 @@ import (
 	"github.com/powerloom/snapshot-sequencer-validator/pkgs/gossipconfig"
 
 	contract "p2p-debugger/contract"
+	"p2p-debugger/internal/epochconfig"
 	"p2p-debugger/redis"
 )
 
@@ -566,7 +567,7 @@ func main() {
 				}
 			}
 
-			// Extract validator batch CIDs
+			// Extract validator batch CIDs (when CID present; summaries still list all validators)
 			validatorBatchCIDs := make(map[string]string)
 			for _, batch := range agg.Batches {
 				if batch.SequencerId != "" && batch.BatchIPFSCID != "" {
@@ -582,8 +583,22 @@ func main() {
 				}
 			}
 
-			// Generate tally dump for the specific data market that triggered the window close
-			if err := tallyDumper.Dump(epochID, dataMarket, slotCounts, eligibleNodesCount, agg.TotalValidators, agg.AggregatedProjects, validatorBatchCIDs); err != nil {
+			submissionCountsStr := make(map[string]int)
+			for slotID, count := range slotCounts {
+				submissionCountsStr[strconv.FormatUint(slotID, 10)] = count
+			}
+			tallyDump := &TallyDump{
+				EpochID:            epochID,
+				DataMarket:         dataMarket,
+				Timestamp:          time.Now().Unix(),
+				SubmissionCounts:   submissionCountsStr,
+				EligibleNodesCount: eligibleNodesCount,
+				TotalValidators:    agg.TotalValidators,
+				AggregatedProjects: agg.AggregatedProjects,
+				ValidatorBatchCIDs: validatorBatchCIDs,
+				ValidatorSummaries: buildValidatorEpochSummaries(agg.Batches),
+			}
+			if err := tallyDumper.Dump(callCtx, tallyDump); err != nil {
 				log.Printf("❌ Error generating tally dump: %v", err)
 			}
 
@@ -697,8 +712,10 @@ func main() {
 						}
 					}
 					if dayTransitionManager != nil && configuredDataMarket != "" {
-						if currentEpoch := lastSeenEpoch.Load(); currentEpoch > 7200 {
-							dayTransitionManager.CleanupOldMarkers(configuredDataMarket, currentEpoch, 7200)
+						if epd := uint64(epochconfig.EpochsPerDay()); epd > 0 {
+							if currentEpoch := lastSeenEpoch.Load(); currentEpoch > epd {
+								dayTransitionManager.CleanupOldMarkers(configuredDataMarket, currentEpoch, epd)
+							}
 						}
 					}
 				}

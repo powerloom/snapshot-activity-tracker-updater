@@ -19,6 +19,11 @@ services:
       - LOG_LEVEL=${LOG_LEVEL:-info}
       # Override RELAYER_URL to use docker service name if not set
       - RELAYER_URL=${RELAYER_URL:-http://relayer-py:8080}
+      # Same Redis as submission counts + tally mirror (dashboard reads tallies from Redis)
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_DB=0
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-}
     depends_on:
       redis:
         condition: service_healthy

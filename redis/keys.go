@@ -66,3 +66,16 @@ func DayRolloverEpochMarkerDetails(dataMarketAddress string, epochID string) str
 func DailySnapshotQuotaTableKey() string {
 	return "DailySnapshotQuotaTableKey"
 }
+
+// TallyEpochKey returns the Redis key for a single epoch's tally JSON blob.
+// Format: TallyEpoch.{lowercase_data_market}.{epochID}
+func TallyEpochKey(dataMarketAddress string, epochID uint64) string {
+	return fmt.Sprintf("TallyEpoch.%s.%d", strings.ToLower(dataMarketAddress), epochID)
+}
+
+// TallyEpochIndexZSet returns the sorted set key listing epoch IDs for a data market.
+// Score = epochID (for ordering); member = decimal epochID string.
+// Format: TallyEpochIndex.{lowercase_data_market}
+func TallyEpochIndexZSet(dataMarketAddress string) string {
+	return fmt.Sprintf("TallyEpochIndex.%s", strings.ToLower(dataMarketAddress))
+}

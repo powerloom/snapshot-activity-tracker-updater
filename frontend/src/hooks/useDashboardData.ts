@@ -38,7 +38,7 @@ export const useDashboardSummary = () => {
 export const useEpochs = () => {
   return useQuery({
     queryKey: queryKeys.epochs,
-    queryFn: getEpochs,
+    queryFn: () => getEpochs({ limit: 0 }),
     refetchInterval: 60000, // Refetch every minute
   });
 };
@@ -98,7 +98,7 @@ export const useProjects = () => {
 export const useTimeline = () => {
   return useQuery({
     queryKey: queryKeys.timeline,
-    queryFn: getTimeline,
+    queryFn: () => getTimeline({ limit: 0 }),
     refetchInterval: 60000,
   });
 };

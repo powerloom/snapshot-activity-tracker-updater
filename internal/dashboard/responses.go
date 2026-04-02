@@ -42,6 +42,9 @@ type TopologyLink struct {
 // EpochsList is the response for listing epochs
 type EpochsList struct {
 	Epochs []EpochSummary `json:"epochs"`
+	Total  int            `json:"total,omitempty"`
+	Offset int            `json:"offset,omitempty"`
+	Limit  int            `json:"limit,omitempty"`
 }
 
 // EpochSummary is a summary of an epoch
@@ -68,8 +71,12 @@ type EpochDetail struct {
 
 // ValidatorBatch represents a validator's batch
 type ValidatorBatch struct {
-	ValidatorID string `json:"validator_id"`
-	BatchCID    string `json:"batch_cid"`
+	ValidatorID           string `json:"validator_id"`
+	BatchCID              string `json:"batch_cid"`
+	HasBatchCID           bool   `json:"has_batch_cid"`
+	ProjectIDsCount       int    `json:"project_ids_count,omitempty"`
+	SubmissionRowsCount int    `json:"submission_rows_count,omitempty"`
+	ProjectVotesCount     int    `json:"project_votes_count,omitempty"`
 }
 
 // ValidatorsList is the response for listing validators
@@ -134,6 +141,9 @@ type ProjectSummary struct {
 // Timeline is the response for timeline events
 type Timeline struct {
 	Events []TimelineEvent `json:"events"`
+	Total  int             `json:"total,omitempty"`
+	Offset int             `json:"offset,omitempty"`
+	Limit  int             `json:"limit,omitempty"`
 }
 
 // TimelineEvent represents an event in the timeline

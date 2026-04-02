@@ -8,22 +8,35 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
-	"strconv"
 	"strings"
 	"sync"
 	"time"
+
+	"p2p-debugger/internal/epochconfig"
+	"p2p-debugger/redis"
 )
+
+// ValidatorEpochSummary is per-validator visibility for an epoch (includes rows without batch IPFS CID).
+type ValidatorEpochSummary struct {
+	ValidatorID         string `json:"validator_id"`
+	BatchCID              string `json:"batch_cid,omitempty"`
+	HasBatchCID           bool   `json:"has_batch_cid"`
+	ProjectIDsCount       int    `json:"project_ids_count"`
+	SubmissionRowsCount int    `json:"submission_rows_count"`
+	ProjectVotesCount     int    `json:"project_votes_count"`
+}
 
 // TallyDump represents a per-epoch tally dump
 type TallyDump struct {
-	EpochID            uint64            `json:"epoch_id"`
-	DataMarket         string            `json:"data_market"`
-	Timestamp          int64             `json:"timestamp"`
-	SubmissionCounts   map[string]int    `json:"submission_counts"` // slotID -> count
-	EligibleNodesCount int               `json:"eligible_nodes_count"`
-	TotalValidators    int               `json:"total_validators"`
-	AggregatedProjects map[string]string `json:"aggregated_projects"`  // projectID -> winning CID
-	ValidatorBatchCIDs map[string]string `json:"validator_batch_cids"` // validatorID -> batch_ipfs_cid
+	EpochID              uint64                  `json:"epoch_id"`
+	DataMarket           string                  `json:"data_market"`
+	Timestamp            int64                   `json:"timestamp"`
+	SubmissionCounts     map[string]int          `json:"submission_counts"` // slotID -> count
+	EligibleNodesCount   int                     `json:"eligible_nodes_count"`
+	TotalValidators      int                     `json:"total_validators"`
+	AggregatedProjects   map[string]string       `json:"aggregated_projects"`  // projectID -> winning CID
+	ValidatorBatchCIDs   map[string]string       `json:"validator_batch_cids"` // validatorID -> batch_ipfs_cid (when CID present)
+	ValidatorSummaries   []ValidatorEpochSummary `json:"validator_summaries,omitempty"`
 }
 
 // TallyDumper handles generating and managing per-epoch tally dumps
@@ -33,6 +46,9 @@ type TallyDumper struct {
 	retentionDays      int
 	pruneIntervalHours int
 	enabled            bool
+	enableFileDumps    bool
+	enableRedis        bool
+	dataMarket         string
 	mu                 sync.Mutex
 }
 
@@ -43,28 +59,15 @@ func NewTallyDumper() *TallyDumper {
 		dumpDir = "./tallies"
 	}
 
-	retentionFiles := 1000 // Default
-	if filesStr := os.Getenv("TALLY_RETENTION_FILES"); filesStr != "" {
-		if files, err := strconv.Atoi(filesStr); err == nil {
-			retentionFiles = files
-		}
-	}
+	retentionFiles := epochconfig.TallyRetentionEpochs()
+	retentionDays := epochconfig.TallyRetentionDays()
+	pruneInterval := epochconfig.PruneIntervalHours()
 
-	retentionDays := 7 // Default
-	if daysStr := os.Getenv("TALLY_RETENTION_DAYS"); daysStr != "" {
-		if days, err := strconv.Atoi(daysStr); err == nil {
-			retentionDays = days
-		}
-	}
+	enabled := os.Getenv("ENABLE_TALLY_DUMPS") != "false"
+	enableFileDumps := os.Getenv("ENABLE_TALLY_FILE_DUMPS") != "false"
+	enableRedis := os.Getenv("ENABLE_TALLY_REDIS") != "false"
 
-	pruneInterval := 1 // Default 1 hour
-	if intervalStr := os.Getenv("TALLY_PRUNE_INTERVAL_HOURS"); intervalStr != "" {
-		if interval, err := strconv.Atoi(intervalStr); err == nil {
-			pruneInterval = interval
-		}
-	}
-
-	enabled := os.Getenv("ENABLE_TALLY_DUMPS") != "false" // Default true
+	dataMarket := os.Getenv("DATA_MARKET_ADDRESS")
 
 	return &TallyDumper{
 		dumpDir:            dumpDir,
@@ -72,6 +75,9 @@ func NewTallyDumper() *TallyDumper {
 		retentionDays:      retentionDays,
 		pruneIntervalHours: pruneInterval,
 		enabled:            enabled,
+		enableFileDumps:    enableFileDumps,
+		enableRedis:        enableRedis,
+		dataMarket:         dataMarket,
 	}
 }
 
@@ -82,92 +88,93 @@ func (td *TallyDumper) Initialize(ctx context.Context) error {
 		return nil
 	}
 
-	// Create dump directory
-	if err := os.MkdirAll(td.dumpDir, 0755); err != nil {
-		return fmt.Errorf("failed to create tally dump directory: %w", err)
+	if td.enableFileDumps {
+		if err := os.MkdirAll(td.dumpDir, 0755); err != nil {
+			return fmt.Errorf("failed to create tally dump directory: %w", err)
+		}
 	}
 
-	log.Printf("Tally dumps enabled: dir=%s, retentionFiles=%d, retentionDays=%d",
-		td.dumpDir, td.retentionFiles, td.retentionDays)
+	log.Printf("Tally dumps: dir=%s, epochsPerDay=%d, retentionEpochs=%d, retentionDays=%d, pruneIntervalH=%d, file=%v, redis=%v",
+		td.dumpDir, epochconfig.EpochsPerDay(), td.retentionFiles, td.retentionDays, td.pruneIntervalHours, td.enableFileDumps, td.enableRedis)
 
-	// Prune on startup
-	if err := td.Prune(); err != nil {
+	if err := td.Prune(ctx); err != nil {
 		log.Printf("Warning: Failed to prune on startup: %v", err)
 	}
 
-	// Start periodic pruning
 	go td.periodicPrune(ctx)
 
 	return nil
 }
 
-// Dump generates a tally dump for an epoch
-func (td *TallyDumper) Dump(epochID uint64, dataMarket string, counts map[uint64]int, eligibleNodesCount int, totalValidators int, aggregatedProjects map[string]string, validatorBatchCIDs map[string]string) error {
-	if !td.enabled {
+// Dump writes a tally for an epoch (JSON file and/or Redis).
+func (td *TallyDumper) Dump(ctx context.Context, tally *TallyDump) error {
+	if !td.enabled || tally == nil {
 		return nil
 	}
 
 	td.mu.Lock()
 	defer td.mu.Unlock()
 
-	// Convert counts to string keys for JSON
-	submissionCounts := make(map[string]int)
-	for slotID, count := range counts {
-		submissionCounts[strconv.FormatUint(slotID, 10)] = count
-	}
-
-	tally := &TallyDump{
-		EpochID:            epochID,
-		DataMarket:         dataMarket,
-		Timestamp:          time.Now().Unix(),
-		SubmissionCounts:   submissionCounts,
-		EligibleNodesCount: eligibleNodesCount,
-		TotalValidators:    totalValidators,
-		AggregatedProjects: aggregatedProjects,
-		ValidatorBatchCIDs: validatorBatchCIDs,
-	}
-
-	// Marshal JSON for file output
 	jsonBytes, err := json.MarshalIndent(tally, "", "  ")
 	if err != nil {
 		return fmt.Errorf("failed to marshal tally: %w", err)
 	}
 
-	// Write to file
-	filename := fmt.Sprintf("epoch_%d_%s.json", epochID, strings.ToLower(strings.TrimPrefix(dataMarket, "0x")))
-	filepath := filepath.Join(td.dumpDir, filename)
-
-	if err := os.WriteFile(filepath, jsonBytes, 0644); err != nil {
-		return fmt.Errorf("failed to write tally file: %w", err)
+	if td.enableFileDumps {
+		filename := fmt.Sprintf("epoch_%d_%s.json", tally.EpochID, strings.ToLower(strings.TrimPrefix(tally.DataMarket, "0x")))
+		path := filepath.Join(td.dumpDir, filename)
+		if err := os.WriteFile(path, jsonBytes, 0644); err != nil {
+			return fmt.Errorf("failed to write tally file: %w", err)
+		}
 	}
 
-	// Log summary instead of full JSON
+	if td.enableRedis && redis.RedisClient != nil && tally.DataMarket != "" {
+		if err := redis.StoreTally(ctx, tally.DataMarket, tally.EpochID, jsonBytes, td.retentionFiles); err != nil {
+			log.Printf("❌ Redis tally store failed: %v", err)
+		}
+	}
+
 	validatorInfo := ""
-	if len(validatorBatchCIDs) > 0 {
-		validatorList := make([]string, 0, len(validatorBatchCIDs))
-		for validatorID, batchCID := range validatorBatchCIDs {
+	if len(tally.ValidatorBatchCIDs) > 0 {
+		validatorList := make([]string, 0, len(tally.ValidatorBatchCIDs))
+		for validatorID, batchCID := range tally.ValidatorBatchCIDs {
 			validatorList = append(validatorList, fmt.Sprintf("%s:%s", validatorID, batchCID))
 		}
 		validatorInfo = fmt.Sprintf(", validatorBatches=%v", validatorList)
 	}
-	log.Printf("📊 TALLY DUMP: epoch=%d, dataMarket=%s, slots=%d, eligibleNodes=%d, validators=%d%s → %s",
-		epochID, dataMarket, len(counts), eligibleNodesCount, totalValidators, validatorInfo, filepath)
+	log.Printf("📊 TALLY: epoch=%d, dataMarket=%s, slots=%d, eligibleNodes=%d, validators=%d, summaries=%d%s",
+		tally.EpochID, tally.DataMarket, len(tally.SubmissionCounts), tally.EligibleNodesCount, tally.TotalValidators, len(tally.ValidatorSummaries), validatorInfo)
 
 	return nil
 }
 
-// Prune removes old tally files based on retention policies
-func (td *TallyDumper) Prune() error {
+// Prune removes old tally files and aligns Redis.
+func (td *TallyDumper) Prune(ctx context.Context) error {
 	if !td.enabled {
 		return nil
 	}
 
+	if td.enableFileDumps {
+		if err := td.pruneFiles(); err != nil {
+			return err
+		}
+	}
+
+	if td.enableRedis && redis.RedisClient != nil && td.dataMarket != "" && td.retentionFiles > 0 {
+		if err := redis.PruneTallyEpochs(ctx, td.dataMarket, td.retentionFiles); err != nil {
+			log.Printf("Warning: Redis tally prune: %v", err)
+		}
+	}
+
+	return nil
+}
+
+func (td *TallyDumper) pruneFiles() error {
 	entries, err := os.ReadDir(td.dumpDir)
 	if err != nil {
 		return fmt.Errorf("failed to read dump directory: %w", err)
 	}
 
-	// Collect file info
 	type fileInfo struct {
 		path    string
 		modTime time.Time
@@ -193,7 +200,6 @@ func (td *TallyDumper) Prune() error {
 		})
 	}
 
-	// Sort by modification time (oldest first)
 	sort.Slice(files, func(i, j int) bool {
 		return files[i].modTime.Before(files[j].modTime)
 	})
@@ -201,16 +207,13 @@ func (td *TallyDumper) Prune() error {
 	cutoffTime := time.Now().Add(-time.Duration(td.retentionDays) * 24 * time.Hour)
 	deletedCount := 0
 
-	// Apply retention policies
 	for i, file := range files {
 		shouldDelete := false
 
-		// Check file count retention
 		if td.retentionFiles > 0 && len(files)-i > td.retentionFiles {
 			shouldDelete = true
 		}
 
-		// Check time-based retention
 		if td.retentionDays > 0 && file.modTime.Before(cutoffTime) {
 			shouldDelete = true
 		}
@@ -241,9 +244,33 @@ func (td *TallyDumper) periodicPrune(ctx context.Context) {
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
-			if err := td.Prune(); err != nil {
+			if err := td.Prune(ctx); err != nil {
 				log.Printf("Error during periodic prune: %v", err)
 			}
 		}
 	}
+}
+
+// buildValidatorEpochSummaries builds per-validator visibility from Level 2 batches.
+func buildValidatorEpochSummaries(batches []*FinalizedBatch) []ValidatorEpochSummary {
+	out := make([]ValidatorEpochSummary, 0, len(batches))
+	for _, b := range batches {
+		if b == nil || b.SequencerId == "" {
+			continue
+		}
+		rows := 0
+		for _, subs := range b.SubmissionDetails {
+			rows += len(subs)
+		}
+		cid := b.BatchIPFSCID
+		out = append(out, ValidatorEpochSummary{
+			ValidatorID:         b.SequencerId,
+			BatchCID:              cid,
+			HasBatchCID:           cid != "",
+			ProjectIDsCount:       len(b.ProjectIds),
+			SubmissionRowsCount: rows,
+			ProjectVotesCount:     len(b.ProjectVotes),
+		})
+	}
+	return out
 }

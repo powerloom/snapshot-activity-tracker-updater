@@ -9,6 +9,8 @@ import (
 	"time"
 
 	"github.com/gorilla/mux"
+
+	"p2p-debugger/internal/epochconfig"
 )
 
 // Server is the dashboard API server
@@ -85,9 +87,10 @@ func (s *Server) handleDashboardSummary(w http.ResponseWriter, r *http.Request) 
 	writeJSON(w, http.StatusOK, summary)
 }
 
-// handleEpochs handles the epochs list endpoint
+// handleEpochs handles the epochs list endpoint (?offset=&limit=; limit 0 = all up to DASHBOARD_MAX_EPOCH_PAGE_FACTOR * DATA_MARKET_EPOCHS_PER_DAY)
 func (s *Server) handleEpochs(w http.ResponseWriter, r *http.Request) {
-	epochs, err := s.reader.GetEpochs(r.Context())
+	offset, limit := parseEpochPagination(r)
+	epochs, err := s.reader.GetEpochs(r.Context(), offset, limit)
 	if err != nil {
 		log.Printf("Error getting epochs: %v", err)
 		writeError(w, http.StatusInternalServerError, "failed to get epochs")
@@ -196,9 +199,10 @@ func (s *Server) handleProjects(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, projects)
 }
 
-// handleTimeline handles the timeline endpoint
+// handleTimeline handles the timeline endpoint (?offset=&limit=)
 func (s *Server) handleTimeline(w http.ResponseWriter, r *http.Request) {
-	timeline, err := s.reader.GetTimeline(r.Context())
+	offset, limit := parseEpochPagination(r)
+	timeline, err := s.reader.GetTimeline(r.Context(), offset, limit)
 	if err != nil {
 		log.Printf("Error getting timeline: %v", err)
 		writeError(w, http.StatusInternalServerError, "failed to get timeline")
@@ -206,6 +210,28 @@ func (s *Server) handleTimeline(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeJSON(w, http.StatusOK, timeline)
+}
+
+func parseEpochPagination(r *http.Request) (offset, limit int) {
+	q := r.URL.Query()
+	offset, _ = strconv.Atoi(q.Get("offset"))
+	if offset < 0 {
+		offset = 0
+	}
+	max := epochconfig.DashboardMaxEpochPageLimit()
+	ls := q.Get("limit")
+	if ls == "" {
+		limit = epochconfig.DefaultEpochPageLimit()
+	} else {
+		limit, _ = strconv.Atoi(ls)
+	}
+	if limit < 0 {
+		limit = epochconfig.DefaultEpochPageLimit()
+	}
+	if limit > max && limit != 0 {
+		limit = max
+	}
+	return offset, limit
 }
 
 // writeJSON writes a JSON response
