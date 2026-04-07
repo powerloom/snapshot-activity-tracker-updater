@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import {
   LineChart,
   Line,
@@ -8,7 +9,7 @@ import {
   ResponsiveContainer,
   Legend,
 } from 'recharts';
-import { useEpochs } from '../hooks/useDashboardData';
+import { useChartEpochs } from '../hooks/useDashboardData';
 import type { EpochSummary } from '../api/types';
 
 const formatEpochLabel = (ts: number) => {
@@ -16,8 +17,20 @@ const formatEpochLabel = (ts: number) => {
   return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit' });
 };
 
+/** Most recent N epochs; times assume ~12s/epoch (~7200/day). limit 0 = server “all retained”. */
+const CHART_RANGE_OPTIONS: { limit: number; label: string }[] = [
+  { limit: 500, label: 'Last 500 (~1 h)' },
+  { limit: 2000, label: 'Last 2k (~3 h)' },
+  { limit: 7200, label: 'Last ~1 day' },
+  { limit: 14400, label: 'Last ~2 days (max page)' },
+  { limit: 0, label: 'All retained' },
+];
+
+const DEFAULT_CHART_LIMIT = 2000;
+
 const EpochCharts: React.FC = () => {
-  const { data, isLoading, error } = useEpochs();
+  const [chartLimit, setChartLimit] = useState(DEFAULT_CHART_LIMIT);
+  const { data, isLoading, error } = useChartEpochs(chartLimit);
   const epochs = data?.epochs ?? [];
 
   const chartData = epochs.map((e: EpochSummary) => ({
@@ -27,26 +40,66 @@ const EpochCharts: React.FC = () => {
     projects: e.aggregated_projects,
   }));
 
-  if (isLoading) {
+  const header = (
+    <div className="flex flex-wrap items-center justify-between gap-3">
+      <p className="font-mono text-xs text-pl-text-muted">
+        {!isLoading && !error && chartData.length > 0
+          ? chartLimit === 0
+            ? `Showing all ${chartData.length.toLocaleString()} epochs in retention`
+            : `Showing the most recent ${chartData.length.toLocaleString()} epochs`
+          : isLoading
+            ? 'Loading…'
+            : 'No data'}
+      </p>
+      <label className="flex items-center gap-2 font-mono text-xs text-pl-text-muted">
+        <span className="shrink-0">Range</span>
+        <select
+          value={chartLimit}
+          onChange={(e) => setChartLimit(Number(e.target.value))}
+          className="rounded-lg border-2 border-pl-border bg-[var(--pl-bg-input)] px-3 py-1.5 text-sm text-white focus:border-pl-accent focus:outline-none"
+        >
+          {CHART_RANGE_OPTIONS.map((o) => (
+            <option key={o.limit} value={o.limit}>
+              {o.label}
+            </option>
+          ))}
+        </select>
+      </label>
+    </div>
+  );
+
+  if (error) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-pl-accent" />
+      <div className="space-y-4">
+        {header}
+        <div className="h-64 flex items-center justify-center text-pl-text-muted">
+          No chart data available
+        </div>
       </div>
     );
   }
 
-  if (error || chartData.length === 0) {
+  if (!isLoading && chartData.length === 0) {
     return (
-      <div className="h-64 flex items-center justify-center text-pl-text-muted">
-        No chart data available
+      <div className="space-y-4">
+        {header}
+        <div className="h-64 flex items-center justify-center text-pl-text-muted">
+          No chart data available
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
+      {header}
       <div className="h-64">
-        <ResponsiveContainer width="100%" height="100%">
+        {isLoading ? (
+          <div className="flex h-full items-center justify-center">
+            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-pl-accent" />
+          </div>
+        ) : (
+          <ResponsiveContainer width="100%" height="100%">
           <LineChart data={chartData} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
             <defs>
               <linearGradient id="slotsGradient" x1="0" y1="0" x2="1" y2="0">
@@ -95,6 +148,7 @@ const EpochCharts: React.FC = () => {
             />
           </LineChart>
         </ResponsiveContainer>
+        )}
       </div>
     </div>
   );

@@ -16,6 +16,7 @@ export const queryKeys = {
   health: ['health'] as const,
   summary: ['summary'] as const,
   epochs: ['epochs'] as const,
+  chartEpochs: (limit: number) => ['epochs', 'chart', limit] as const,
   epoch: (id: number) => ['epochs', id] as const,
   validators: ['validators'] as const,
   validator: (id: string) => ['validators', id] as const,
@@ -40,6 +41,15 @@ export const useEpochs = () => {
     queryKey: queryKeys.epochs,
     queryFn: () => getEpochs({ limit: 0 }),
     refetchInterval: 60000, // Refetch every minute
+  });
+};
+
+/** Epochs for the slots/projects chart only (?limit= caps density; 0 = all retained). */
+export const useChartEpochs = (limit: number) => {
+  return useQuery({
+    queryKey: queryKeys.chartEpochs(limit),
+    queryFn: () => getEpochs({ limit }),
+    refetchInterval: 60000,
   });
 };
 
