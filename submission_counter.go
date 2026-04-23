@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"math"
+	"os"
 	"strconv"
 	"strings"
 	"sync"
@@ -488,8 +489,9 @@ func (sc *SubmissionCounter) PruneOldDays(dataMarket string, currentDay string, 
 	return removed
 }
 
-// ResetCountsForDay resets counts for a specific day (useful after final update)
-// Clears both in-memory cache and Redis keys for that day
+// ResetCountsForDay resets in-memory counts for a day after final rewards.
+// Redis keys for that day are deleted only when CLEAR_REDIS_DAY_AFTER_FINAL_REWARDS=true
+// (default: false — keep per-day keys for audit / reconciliation).
 func (sc *SubmissionCounter) ResetCountsForDay(dataMarket string, day string) {
 	sc.mu.Lock()
 	defer sc.mu.Unlock()
@@ -497,6 +499,12 @@ func (sc *SubmissionCounter) ResetCountsForDay(dataMarket string, day string) {
 	// Clear in-memory cache
 	if dayCounts, ok := sc.counts[dataMarket]; ok {
 		delete(dayCounts, day)
+	}
+
+	clearRedis := os.Getenv("CLEAR_REDIS_DAY_AFTER_FINAL_REWARDS") == "true"
+	if !clearRedis {
+		log.Printf("📌 Preserving Redis keys for data market %s day %s (set CLEAR_REDIS_DAY_AFTER_FINAL_REWARDS=true to delete after EOD)", dataMarket, day)
+		return
 	}
 
 	// Clear Redis keys for this day
