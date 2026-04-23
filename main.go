@@ -543,6 +543,14 @@ func main() {
 				}
 			}
 
+			// Refresh quota from chain before eligibility for this epoch (GetQuota reads in-memory/Redis first;
+			// previously UpdateQuota ran later in the callback, so a contract quota change could lag one epoch.)
+			if quotaCache != nil {
+				if err := quotaCache.UpdateQuotaForEpochWithContext(callCtx, dataMarket, epochID); err != nil {
+					log.Printf("⚠️ Failed to update quota cache for epoch %d: %v", epochID, err)
+				}
+			}
+
 			// Get daily snapshot quota for eligibility check
 			dailySnapshotQuota := 0
 			if quotaCache != nil {
@@ -609,13 +617,6 @@ func main() {
 				dayTransitionManager.CheckDayTransition(dataMarket, currentDay, epochID)
 			} else {
 				log.Printf("⚠️  Skipping day transition check for epoch %d (day fetch failed)", epochID)
-			}
-
-			// Update quota cache for this epoch (queries contract periodically)
-			if quotaCache != nil {
-				if err := quotaCache.UpdateQuotaForEpochWithContext(callCtx, dataMarket, epochID); err != nil {
-					log.Printf("⚠️ Failed to update quota cache for epoch %d: %v", epochID, err)
-				}
 			}
 
 			// Check if contract updater is initialized
@@ -823,6 +824,12 @@ func main() {
 								if marker, isBufferEpoch := dayTransitionManager.IsBufferEpoch(dataMarket, epochID); isBufferEpoch {
 									log.Printf("🎯 [EpochReleased] Buffer epoch reached for data market %s: epoch %d (previous day: %s)",
 										dataMarket, epochID, marker.LastKnownDay)
+
+									if quotaCache != nil {
+										if err := quotaCache.UpdateQuotaForEpochWithContext(callCtx, dataMarket, epochID); err != nil {
+											log.Printf("⚠️ [EpochReleased] Failed to update quota cache for epoch %d: %v", epochID, err)
+										}
+									}
 
 									// Get daily snapshot quota from cache
 									dailySnapshotQuota := 0
