@@ -278,6 +278,20 @@ When iterating on dashboard UI, avoid rebuilding the whole stack:
 
 Dashboard uses `Dockerfile.dashboard`; tracker uses `Dockerfile`. They are independent.
 
+### Slack epoch summaries
+
+Optional [Incoming Webhooks](https://api.slack.com/messaging/webhooks) on the **tracker** (same pattern as `snapshotter-lite-local-collector`):
+
+| Variable | Purpose |
+|----------|---------|
+| `SLACK_WEBHOOK_URL` | Webhook URL (optional: `ACTIVITY_TRACKER_SLACK_WEBHOOK_URL`) |
+| `SLACK_EPOCH_SUMMARY_EVERY_EPOCHS` | Post every Nth epoch only (default `30`; `0` disables) |
+| `SLACK_USERNAME` | Bot display name (default `Activity Tracker`) |
+
+Each message includes protocol day, active slot count, eligible nodes, validator batch counts (with/without IPFS batch CID), and aggregated project count.
+
+Retention and API limits are driven by `DATA_MARKET_EPOCHS_PER_DAY` and `*_FACTOR` envs (see `.env.example`).
+
 ### Building with Dashboard
 
 ```bash

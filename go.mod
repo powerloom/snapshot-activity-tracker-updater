@@ -5,12 +5,13 @@ go 1.25
 require (
 	github.com/cenkalti/backoff/v4 v4.3.0
 	github.com/ethereum/go-ethereum v1.16.7
+	github.com/gorilla/mux v1.8.1
 	github.com/libp2p/go-libp2p v0.43.0
 	github.com/libp2p/go-libp2p-kad-dht v0.34.0
 	github.com/libp2p/go-libp2p-pubsub v0.14.2
 	github.com/multiformats/go-multiaddr v0.16.1
 	github.com/powerloom/go-rpc-helper v1.0.5
-	github.com/powerloom/snapshot-sequencer-validator v0.0.0-20251118183737-ffc7df9227f8
+	github.com/powerloom/snapshot-sequencer-validator v0.0.0-20260323134655-052e28c6fc37
 	github.com/redis/go-redis/v9 v9.7.0
 )
 
@@ -41,7 +42,6 @@ require (
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/google/gopacket v1.1.19 // indirect
 	github.com/google/uuid v1.6.0 // indirect
-	github.com/gorilla/mux v1.8.1 // indirect
 	github.com/gorilla/websocket v1.5.3 // indirect
 	github.com/hashicorp/golang-lru v1.0.2 // indirect
 	github.com/hashicorp/golang-lru/v2 v2.0.7 // indirect

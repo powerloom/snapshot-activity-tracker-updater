@@ -119,7 +119,7 @@ const EpochDetailView: React.FC<EpochDetailViewProps> = ({ epochId }) => {
         {/* Validators table */}
         <div className="bg-pl-bg-elevated rounded-lg p-4 border-2 border-pl-border">
           <h4 className="font-mono text-xs uppercase tracking-wider text-pl-text-muted mb-3">
-            Validators (Batch CID)
+            Validators (batch + contribution summary)
           </h4>
           <div className="overflow-x-auto max-h-64 overflow-y-auto">
             <table className="min-w-full text-sm">
@@ -127,26 +127,43 @@ const EpochDetailView: React.FC<EpochDetailViewProps> = ({ epochId }) => {
                 <tr>
                   <th className="text-left py-2 text-pl-text-muted">Validator ID</th>
                   <th className="text-left py-2 text-pl-text-muted">Batch CID</th>
+                  <th className="text-right py-2 text-pl-text-muted">Projects</th>
+                  <th className="text-right py-2 text-pl-text-muted">Rows</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-pl-border-subtle">
-                {validators.map((v) => (
-                  <tr key={v.validator_id}>
-                    <td className="py-1.5 font-mono text-white">
-                      {truncateId(v.validator_id)}
-                    </td>
-                    <td className="py-1.5">
-                      <a
-                        href={`${IPFS_GATEWAY}${v.batch_cid}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="font-mono text-pl-accent hover:text-pl-accent/80 hover:underline"
-                      >
-                        {truncateCid(v.batch_cid)}
-                      </a>
-                    </td>
-                  </tr>
-                ))}
+                {validators.map((v) => {
+                  const hasCid = v.has_batch_cid ?? (v.batch_cid?.length ?? 0) > 0;
+                  return (
+                    <tr key={v.validator_id}>
+                      <td className="py-1.5 font-mono text-white">
+                        {truncateId(v.validator_id)}
+                      </td>
+                      <td className="py-1.5 font-mono">
+                        {hasCid ? (
+                          <a
+                            href={`${IPFS_GATEWAY}${v.batch_cid}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-pl-accent hover:text-pl-accent/80 hover:underline"
+                          >
+                            {truncateCid(v.batch_cid)}
+                          </a>
+                        ) : (
+                          <span className="text-amber-400/90" title="No batch IPFS CID; batch may still be inlined in P2P">
+                            No CID
+                          </span>
+                        )}
+                      </td>
+                      <td className="py-1.5 text-right text-pl-text-muted">
+                        {v.project_ids_count ?? '—'}
+                      </td>
+                      <td className="py-1.5 text-right text-pl-text-muted">
+                        {v.submission_rows_count ?? '—'}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>

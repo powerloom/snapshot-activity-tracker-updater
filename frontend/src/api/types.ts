@@ -38,6 +38,9 @@ export interface TopologyLink {
 
 export interface EpochsList {
   epochs: EpochSummary[];
+  total?: number;
+  offset?: number;
+  limit?: number;
 }
 
 export interface EpochSummary {
@@ -63,6 +66,10 @@ export interface EpochDetail {
 export interface ValidatorBatch {
   validator_id: string;
   batch_cid: string;
+  has_batch_cid?: boolean;
+  project_ids_count?: number;
+  submission_rows_count?: number;
+  project_votes_count?: number;
 }
 
 export interface ValidatorsList {
@@ -118,6 +125,9 @@ export interface ProjectSummary {
 
 export interface Timeline {
   events: TimelineEvent[];
+  total?: number;
+  offset?: number;
+  limit?: number;
 }
 
 export interface TimelineEvent {

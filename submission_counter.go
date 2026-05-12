@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"math"
+	"os"
 	"strconv"
 	"strings"
 	"sync"
@@ -488,8 +489,11 @@ func (sc *SubmissionCounter) PruneOldDays(dataMarket string, currentDay string, 
 	return removed
 }
 
-// ResetCountsForDay resets counts for a specific day (useful after final update)
-// Clears both in-memory cache and Redis keys for that day
+// ResetCountsForDay resets in-memory counts for a day after final rewards.
+// Redis keys for that day are deleted only when CLEAR_REDIS_DAY_AFTER_FINAL_REWARDS=true
+// (default: false — keep per-day keys for audit / reconciliation).
+// Regardless of that flag, Redis keys for (day - 7) are always deleted when that day ID is >= 1
+// (rolling ~7-day retention; never attempts day 0 or negative).
 func (sc *SubmissionCounter) ResetCountsForDay(dataMarket string, day string) {
 	sc.mu.Lock()
 	defer sc.mu.Unlock()
@@ -499,45 +503,61 @@ func (sc *SubmissionCounter) ResetCountsForDay(dataMarket string, day string) {
 		delete(dayCounts, day)
 	}
 
-	// Clear Redis keys for this day
+	clearRedis := os.Getenv("CLEAR_REDIS_DAY_AFTER_FINAL_REWARDS") == "true"
+	if clearRedis {
+		sc.deleteRedisSubmissionKeysForDay(dataMarket, day)
+	} else {
+		log.Printf("📌 Preserving Redis keys for data market %s day %s (set CLEAR_REDIS_DAY_AFTER_FINAL_REWARDS=true to delete after EOD); rolling prune for day-7 still applies", dataMarket, day)
+	}
+
+	// Rolling retention: drop submission-cache keys for day-7 (never day 0 or below)
 	if redis.RedisClient != nil {
-		keysToDelete := make([]string, 0)
-
-		// Get all slot IDs from slots-with-submissions set (ALL slots for this day)
-		slotsWithSubmissionsKey := redis.SlotsWithSubmissionsByDayKey(dataMarket, day)
-		slotIDs, err := redis.SMembers(sc.ctx, slotsWithSubmissionsKey)
-		if err == nil && len(slotIDs) > 0 {
-			// Delete slot-specific keys for each slot
-			for _, slotIDStr := range slotIDs {
-				keysToDelete = append(keysToDelete,
-					redis.SlotSubmissionKey(dataMarket, slotIDStr, day),
-					redis.EligibleSlotSubmissionKey(dataMarket, slotIDStr, day),
-				)
-			}
-		}
-
-		// Delete the eligible nodes set and slots-with-submissions set
-		keysToDelete = append(keysToDelete,
-			redis.EligibleNodesByDayKey(dataMarket, day),
-			slotsWithSubmissionsKey,
-		)
-
-		// Delete epoch-specific keys for this day (scan pattern)
-		// Note: We can't easily enumerate all epoch IDs, so we'll use expiration instead
-		// Epoch keys already have 48-hour expiration set when created
-
-		// Delete all collected keys
-		if len(keysToDelete) > 0 {
-			deleted, err := redis.Del(sc.ctx, keysToDelete...)
-			if err != nil {
-				log.Printf("⚠️ Failed to delete Redis keys for data market %s, day %s: %v", dataMarket, day, err)
-			} else {
-				log.Printf("🧹 Deleted %d Redis keys for data market %s, day %s", deleted, dataMarket, day)
+		if dayNum, err := strconv.ParseInt(day, 10, 64); err == nil {
+			pruneDay := dayNum - 7
+			if pruneDay >= 1 {
+				pruneDayStr := strconv.FormatInt(pruneDay, 10)
+				sc.deleteRedisSubmissionKeysForDay(dataMarket, pruneDayStr)
 			}
 		}
 	}
 
-	log.Printf("Reset counts for data market %s, day %s", dataMarket, day)
+	log.Printf("ResetCountsForDay complete: %s day %s (in-memory for this day cleared; any Redis changes are logged above)", dataMarket, day)
+}
+
+// deleteRedisSubmissionKeysForDay deletes SlotSubmissions / EligibleSlotSubmissions strings and
+// EligibleNodesByDay / SlotsWithSubmissionsByDay sets for a single protocol day.
+// Epoch-scoped hashes use 48h TTL at write time and are not enumerated here.
+func (sc *SubmissionCounter) deleteRedisSubmissionKeysForDay(dataMarket, day string) {
+	if redis.RedisClient == nil {
+		return
+	}
+
+	keysToDelete := make([]string, 0)
+
+	slotsWithSubmissionsKey := redis.SlotsWithSubmissionsByDayKey(dataMarket, day)
+	slotIDs, err := redis.SMembers(sc.ctx, slotsWithSubmissionsKey)
+	if err == nil && len(slotIDs) > 0 {
+		for _, slotIDStr := range slotIDs {
+			keysToDelete = append(keysToDelete,
+				redis.SlotSubmissionKey(dataMarket, slotIDStr, day),
+				redis.EligibleSlotSubmissionKey(dataMarket, slotIDStr, day),
+			)
+		}
+	}
+
+	keysToDelete = append(keysToDelete,
+		redis.EligibleNodesByDayKey(dataMarket, day),
+		slotsWithSubmissionsKey,
+	)
+
+	if len(keysToDelete) > 0 {
+		deleted, err := redis.Del(sc.ctx, keysToDelete...)
+		if err != nil {
+			log.Printf("⚠️ Failed to delete Redis keys for data market %s, day %s: %v", dataMarket, day, err)
+		} else {
+			log.Printf("🧹 Deleted %d Redis keys for data market %s, day %s", deleted, dataMarket, day)
+		}
+	}
 }
 
 // Helper function

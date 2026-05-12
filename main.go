@@ -29,6 +29,7 @@ import (
 	"github.com/powerloom/snapshot-sequencer-validator/pkgs/gossipconfig"
 
 	contract "p2p-debugger/contract"
+	"p2p-debugger/internal/epochconfig"
 	"p2p-debugger/redis"
 )
 
@@ -542,6 +543,14 @@ func main() {
 				}
 			}
 
+			// Refresh quota from chain before eligibility for this epoch (GetQuota reads in-memory/Redis first;
+			// previously UpdateQuota ran later in the callback, so a contract quota change could lag one epoch.)
+			if quotaCache != nil {
+				if err := quotaCache.UpdateQuotaForEpochWithContext(callCtx, dataMarket, epochID); err != nil {
+					log.Printf("⚠️ Failed to update quota cache for epoch %d: %v", epochID, err)
+				}
+			}
+
 			// Get daily snapshot quota for eligibility check
 			dailySnapshotQuota := 0
 			if quotaCache != nil {
@@ -566,7 +575,7 @@ func main() {
 				}
 			}
 
-			// Extract validator batch CIDs
+			// Extract validator batch CIDs (when CID present; summaries still list all validators)
 			validatorBatchCIDs := make(map[string]string)
 			for _, batch := range agg.Batches {
 				if batch.SequencerId != "" && batch.BatchIPFSCID != "" {
@@ -582,9 +591,25 @@ func main() {
 				}
 			}
 
-			// Generate tally dump for the specific data market that triggered the window close
-			if err := tallyDumper.Dump(epochID, dataMarket, slotCounts, eligibleNodesCount, agg.TotalValidators, agg.AggregatedProjects, validatorBatchCIDs); err != nil {
+			submissionCountsStr := make(map[string]int)
+			for slotID, count := range slotCounts {
+				submissionCountsStr[strconv.FormatUint(slotID, 10)] = count
+			}
+			tallyDump := &TallyDump{
+				EpochID:            epochID,
+				DataMarket:         dataMarket,
+				Timestamp:          time.Now().Unix(),
+				SubmissionCounts:   submissionCountsStr,
+				EligibleNodesCount: eligibleNodesCount,
+				TotalValidators:    agg.TotalValidators,
+				AggregatedProjects: agg.AggregatedProjects,
+				ValidatorBatchCIDs: validatorBatchCIDs,
+				ValidatorSummaries: buildValidatorEpochSummaries(agg.Batches),
+			}
+			if err := tallyDumper.Dump(callCtx, tallyDump); err != nil {
 				log.Printf("❌ Error generating tally dump: %v", err)
+			} else {
+				maybeSendSlackEpochSummary(callCtx, tallyDump, currentDay)
 			}
 
 			// Check for day transition (using the same currentDay fetched above)
@@ -592,13 +617,6 @@ func main() {
 				dayTransitionManager.CheckDayTransition(dataMarket, currentDay, epochID)
 			} else {
 				log.Printf("⚠️  Skipping day transition check for epoch %d (day fetch failed)", epochID)
-			}
-
-			// Update quota cache for this epoch (queries contract periodically)
-			if quotaCache != nil {
-				if err := quotaCache.UpdateQuotaForEpochWithContext(callCtx, dataMarket, epochID); err != nil {
-					log.Printf("⚠️ Failed to update quota cache for epoch %d: %v", epochID, err)
-				}
 			}
 
 			// Check if contract updater is initialized
@@ -697,8 +715,10 @@ func main() {
 						}
 					}
 					if dayTransitionManager != nil && configuredDataMarket != "" {
-						if currentEpoch := lastSeenEpoch.Load(); currentEpoch > 7200 {
-							dayTransitionManager.CleanupOldMarkers(configuredDataMarket, currentEpoch, 7200)
+						if epd := uint64(epochconfig.EpochsPerDay()); epd > 0 {
+							if currentEpoch := lastSeenEpoch.Load(); currentEpoch > epd {
+								dayTransitionManager.CleanupOldMarkers(configuredDataMarket, currentEpoch, epd)
+							}
 						}
 					}
 				}
@@ -804,6 +824,12 @@ func main() {
 								if marker, isBufferEpoch := dayTransitionManager.IsBufferEpoch(dataMarket, epochID); isBufferEpoch {
 									log.Printf("🎯 [EpochReleased] Buffer epoch reached for data market %s: epoch %d (previous day: %s)",
 										dataMarket, epochID, marker.LastKnownDay)
+
+									if quotaCache != nil {
+										if err := quotaCache.UpdateQuotaForEpochWithContext(callCtx, dataMarket, epochID); err != nil {
+											log.Printf("⚠️ [EpochReleased] Failed to update quota cache for epoch %d: %v", epochID, err)
+										}
+									}
 
 									// Get daily snapshot quota from cache
 									dailySnapshotQuota := 0

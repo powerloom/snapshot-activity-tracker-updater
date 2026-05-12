@@ -21,9 +21,8 @@ const EpochActivityTable: React.FC<EpochActivityTableProps> = ({ selectedEpochId
   const { data, isLoading, error } = useEpochs();
   const [page, setPage] = useState(0);
   const epochs = data?.epochs ?? [];
-  const sortedEpochs = [...epochs].reverse();
-  const totalPages = Math.ceil(sortedEpochs.length / PAGE_SIZE) || 1;
-  const displayEpochs = sortedEpochs.slice(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE);
+  const totalPages = Math.ceil(epochs.length / PAGE_SIZE) || 1;
+  const displayEpochs = epochs.slice(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE);
 
   if (isLoading) {
     return (
@@ -114,10 +113,10 @@ const EpochActivityTable: React.FC<EpochActivityTableProps> = ({ selectedEpochId
           ))}
         </tbody>
       </table>
-      {sortedEpochs.length > PAGE_SIZE && (
+      {epochs.length > PAGE_SIZE && (
         <div className="mt-4 px-4 flex items-center justify-between border-t border-pl-border-subtle pt-4">
           <p className="font-mono text-sm text-pl-text-muted">
-            {page * PAGE_SIZE + 1}–{Math.min((page + 1) * PAGE_SIZE, sortedEpochs.length)} of {sortedEpochs.length}
+            {page * PAGE_SIZE + 1}–{Math.min((page + 1) * PAGE_SIZE, epochs.length)} of {epochs.length}
           </p>
           <div className="flex gap-2">
             <button

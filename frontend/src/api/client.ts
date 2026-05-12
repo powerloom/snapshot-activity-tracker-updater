@@ -33,9 +33,16 @@ export const getDashboardSummary = async (): Promise<DashboardSummary> => {
   return response.data;
 };
 
-// Epochs
-export const getEpochs = async (): Promise<EpochsList> => {
-  const response = await apiClient.get<EpochsList>('/epochs');
+// Epochs (?offset=&limit=; limit 0 = all retained epochs up to server max page size)
+export const getEpochs = async (params?: {
+  offset?: number;
+  limit?: number;
+}): Promise<EpochsList> => {
+  const search = new URLSearchParams();
+  if (params?.offset != null) search.set('offset', String(params.offset));
+  if (params?.limit != null) search.set('limit', String(params.limit));
+  const q = search.toString();
+  const response = await apiClient.get<EpochsList>(`/epochs${q ? `?${q}` : ''}`);
   return response.data;
 };
 
@@ -72,9 +79,16 @@ export const getProjects = async (): Promise<ProjectsList> => {
   return response.data;
 };
 
-// Timeline
-export const getTimeline = async (): Promise<Timeline> => {
-  const response = await apiClient.get<Timeline>('/timeline');
+// Timeline (?offset=&limit=)
+export const getTimeline = async (params?: {
+  offset?: number;
+  limit?: number;
+}): Promise<Timeline> => {
+  const search = new URLSearchParams();
+  if (params?.offset != null) search.set('offset', String(params.offset));
+  if (params?.limit != null) search.set('limit', String(params.limit));
+  const q = search.toString();
+  const response = await apiClient.get<Timeline>(`/timeline${q ? `?${q}` : ''}`);
   return response.data;
 };
 

@@ -19,6 +19,11 @@ services:
       - LOG_LEVEL=${LOG_LEVEL:-info}
       # Override RELAYER_URL to use docker service name if not set
       - RELAYER_URL=${RELAYER_URL:-http://relayer-py:8080}
+      # Same Redis as submission counts + tally mirror (dashboard reads tallies from Redis)
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_DB=0
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-}
     depends_on:
       redis:
         condition: service_healthy
@@ -30,7 +35,9 @@ services:
   redis:
     image: redis:alpine
     command: redis-server --appendonly yes
-    # Note: Redis is NOT exposed to host - only accessible within docker network
+    # Host access for diagnostics (redis-cli / Python). Default 127.0.0.1:16379 -> container 6379
+    ports:
+      - "${REDIS_BIND_ADDR:-127.0.0.1}:${REDIS_HOST_PORT:-16379}:6379"
     volumes:
       - redis-data:/data
     healthcheck:
@@ -55,8 +62,8 @@ services:
     profiles:
       - full
     ports:
-      - "${RABBITMQ_PORT:-5672}:5672"
-      - "${RABBITMQ_MGMT_PORT:-15672}:15672"
+      - "${RABBITMQ_BIND_ADDR:-127.0.0.1}:${RABBITMQ_PORT:-5672}:5672"
+      - "${RABBITMQ_BIND_ADDR:-127.0.0.1}:${RABBITMQ_MGMT_PORT:-15672}:15672"
     environment:
       - RABBITMQ_DEFAULT_USER=${RABBITMQ_USER:-guest}
       - RABBITMQ_DEFAULT_PASS=${RABBITMQ_PASS:-guest}
@@ -89,7 +96,6 @@ services:
     build:
       context: ./relayer-py
       dockerfile: Dockerfile
-    container_name: snapshot-activity-tracker-relayer-py
     environment:
       # Core RPC Configuration
       - POWERLOOM_RPC_NODES=${POWERLOOM_RPC_NODES}
@@ -159,6 +165,11 @@ services:
       - REDIS_PORT=6379
       - REDIS_DB=0
       - DATA_MARKET_ADDRESS=${DATA_MARKET_ADDRESS}
+      - DATA_MARKET_EPOCHS_PER_DAY=${DATA_MARKET_EPOCHS_PER_DAY:-7200}
+      - DASHBOARD_MAX_EPOCH_PAGE_FACTOR=${DASHBOARD_MAX_EPOCH_PAGE_FACTOR:-2}
+      - DASHBOARD_DEFAULT_EPOCH_PAGE_FACTOR=${DASHBOARD_DEFAULT_EPOCH_PAGE_FACTOR:-0}
+      - NETWORK_TOPOLOGY_EPOCH_FACTOR=${NETWORK_TOPOLOGY_EPOCH_FACTOR:-1}
+      - NETWORK_TOPOLOGY_DAY_FRACTION_DENOMINATOR=${NETWORK_TOPOLOGY_DAY_FRACTION_DENOMINATOR:-240}
       - TALLY_DUMP_DIR=/app/tallies
       - DASHBOARD_PORT=${DASHBOARD_PORT:-8080}
     depends_on:
