@@ -33,12 +33,14 @@ const EpochCharts: React.FC = () => {
   const { data, isLoading, error } = useChartEpochs(chartLimit);
   const epochs = data?.epochs ?? [];
 
-  const chartData = epochs.map((e: EpochSummary) => ({
-    epoch: e.epoch_id,
-    label: formatEpochLabel(e.timestamp),
-    slots: e.slot_count,
-    projects: e.aggregated_projects,
-  }));
+  const chartData = [...epochs]
+    .sort((a, b) => a.epoch_id - b.epoch_id)
+    .map((e: EpochSummary) => ({
+      epoch: e.epoch_id,
+      label: formatEpochLabel(e.timestamp),
+      slots: e.slot_count,
+      projects: e.aggregated_projects,
+    }));
 
   const header = (
     <div className="flex flex-wrap items-center justify-between gap-3">
