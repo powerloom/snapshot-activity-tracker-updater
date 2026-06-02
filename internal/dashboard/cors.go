@@ -8,6 +8,14 @@ import (
 	"github.com/rs/cors"
 )
 
+// wrapCORS enables browser calls from datamarkets.powerloom.io (and other origins).
+// If the edge nginx returns 404 for OPTIONS, add:
+//
+//	location /api/ {
+//	    if ($request_method = OPTIONS) { add_header Access-Control-Allow-Origin $http_origin; ... }
+//	    proxy_pass http://dashboard-api:8080;
+//	}
+//
 // corsOriginsFromEnv returns allowed browser origins for dashboard JSON routes.
 // DASHBOARD_CORS_ORIGINS: comma-separated list, or "*" (default) for any origin.
 // Example: https://datamarkets.powerloom.io,http://localhost:5173
