@@ -1,11 +1,23 @@
 package dashboard
 
+import "time"
+
 // API response structures
 
 // HealthResponse is the health check response
 type HealthResponse struct {
 	Status    string `json:"status"`
 	Timestamp string `json:"timestamp"`
+}
+
+// MeshHealthResponse is the public mesh-health surface for datamarkets (activity tracker).
+// Metrics are derived from finalized-batch tallies in the window, not DSV pipeline Redis heartbeats.
+type MeshHealthResponse struct {
+	PeerCount24h   int       `json:"peer_count_24h"`
+	Heartbeats24h  int       `json:"heartbeats_24h"`
+	WindowMinutes  int       `json:"window_minutes"`
+	Timestamp      time.Time `json:"timestamp"`
+	Source         string    `json:"source"`
 }
 
 // DashboardSummary is the summary response

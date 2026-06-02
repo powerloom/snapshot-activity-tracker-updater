@@ -58,9 +58,9 @@ type ValidatorEpochSummary struct {
 // loadTallies returns tallies from Redis when the index is non-empty; otherwise reads files.
 // offset/limit apply to epoch ordering (newest first). limit 0 = all from offset.
 func (r *Reader) loadTallies(ctx context.Context, offset, limit int) ([]*TallyDump, int64, error) {
-	useRedis, err := redis.HasTallyData(ctx, r.dataMarket)
-	if err != nil {
-		return nil, 0, err
+	useRedis := false
+	if has, err := redis.HasTallyData(ctx, r.dataMarket); err == nil && has {
+		useRedis = true
 	}
 	if useRedis {
 		total, err := redis.TallyIndexCount(ctx, r.dataMarket)

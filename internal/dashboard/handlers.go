@@ -60,6 +60,9 @@ func (s *Server) setupRoutes() {
 
 	// Timeline
 	api.HandleFunc("/timeline", s.handleTimeline).Methods(http.MethodGet)
+
+	// Public surfaces for datamarkets (same host as watcher; tally-derived mesh health)
+	api.HandleFunc("/public/mesh-health", s.handlePublicMeshHealth).Methods(http.MethodGet)
 }
 
 // GetRouter returns the HTTP router (with CORS for browser clients e.g. datamarkets.powerloom.io).
@@ -197,6 +200,28 @@ func (s *Server) handleProjects(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeJSON(w, http.StatusOK, projects)
+}
+
+// handlePublicMeshHealth serves mesh participation derived from epoch tallies.
+// Query: minutes (1–1440, default 1440). Response shape matches legacy monitor-api public route.
+func (s *Server) handlePublicMeshHealth(w http.ResponseWriter, r *http.Request) {
+	minutes, _ := strconv.Atoi(r.URL.Query().Get("minutes"))
+	if minutes <= 0 {
+		minutes = 1440
+	}
+	if minutes > 1440 {
+		minutes = 1440
+	}
+
+	health, err := s.reader.GetMeshHealth(r.Context(), minutes)
+	if err != nil {
+		log.Printf("Error getting mesh health: %v", err)
+		writeError(w, http.StatusInternalServerError, "failed to get mesh health")
+		return
+	}
+
+	w.Header().Set("Cache-Control", "public, max-age=60")
+	writeJSON(w, http.StatusOK, health)
 }
 
 // handleTimeline handles the timeline endpoint (?offset=&limit=)

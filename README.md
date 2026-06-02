@@ -320,6 +320,7 @@ Access at (production: embedded UI in container):
 |----------|-------------|
 | `/api/health` | Health check |
 | `/api/dashboard/summary` | Overview stats |
+| `/api/public/mesh-health` | Participation in window (validators + slot submissions from tallies; `?minutes=1440`) |
 | `/api/network/topology` | Network graph data |
 | `/api/epochs` | List epochs |
 | `/api/validators` | Validator list |
