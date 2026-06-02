@@ -62,9 +62,9 @@ func (s *Server) setupRoutes() {
 	api.HandleFunc("/timeline", s.handleTimeline).Methods(http.MethodGet)
 }
 
-// GetRouter returns the HTTP router
+// GetRouter returns the HTTP router (with CORS for browser clients e.g. datamarkets.powerloom.io).
 func (s *Server) GetRouter() http.Handler {
-	return s.router
+	return wrapCORS(s.router)
 }
 
 // handleHealth handles the health check endpoint
